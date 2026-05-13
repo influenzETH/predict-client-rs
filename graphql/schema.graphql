@@ -1,0 +1,3471 @@
+type Account {
+  walletId: ID!
+  name: String
+  description: String
+  address: Address!
+  imageUrl: String
+  imageStatus: ImageStatus!
+  twitterUsername: String
+  """
+  Hidden until the account has completed deposit validation.
+  """
+  referralCode: String
+  hasOnboarded: Boolean!
+  allocationWallet: Address
+  smartWalletPointsOperatorSet: Boolean!
+  updatedAt: DateTime
+  createdAt: DateTime
+  lastLoginAt: DateTime
+  """
+  Maker fee discount in basis points this account receives due to volume
+  tier or special programme membership. `0` for most accounts.
+  """
+  feeDiscountBps: Int!
+  """
+  Multiplier applied to points earned on each trade (default `1.0`).
+  Elevated for accounts in promotional programmes.
+  """
+  pointsEarningRatio: Float!
+  """
+  Broker account when this wallet trades through a broker programme.
+  """
+  broker: Account
+  brokerRatio: Float
+  """
+  Paginated list of open and historical orders placed by this account.
+  """
+  orders(filter: OrderFilterInput, pagination: ForwardPaginationInput): OrderConnection!
+  """
+  Paginated raw order-event log entries for this account (fills, cancels).
+  """
+  ordersEventLog(
+    filter: OrderEventLogFilterInput
+    pagination: ForwardPaginationInput
+  ): OrderEventLogConnection!
+  """
+  Paginated list of positions (outcome-token holdings) for this account.
+
+  Supports `AMOUNT_DESC` (default), `SHARES_VALUE_DESC`,
+  `MARKET_QUESTION_ASC`, and `MARKET_QUESTION_DESC` sort orders.
+  `RETURN_DESC` currently falls back to `AMOUNT_DESC`.
+
+  `categoryId` is applied as a filter when provided.
+  """
+  positions(
+    filter: PositionFilterInput
+    pagination: ForwardPaginationInput
+    sort: PositionSort
+  ): PositionConnection!
+  """
+  Positions that are eligible to be claimed (resolved markets where this
+  account holds winning shares).
+  """
+  claimablePositions: PositionConnection!
+  """
+  Positions in fully settled markets that can be cleared from the
+  account's history (resolved markets where the held outcome lost).
+  """
+  clearablePositions: PositionConnection!
+  """
+  Earned and claimed badges for this account.
+  """
+  badges(
+    filter: AccountBadgeFilterInput
+    pagination: ForwardPaginationInput
+  ): AccountBadgeConnection!
+  """
+  Paginated OAuth sessions authorised by this account.
+  """
+  oauthSessions(pagination: ForwardPaginationInput): OAuthSessionConnection!
+  """
+  Weekly points breakdown history for this account.
+  """
+  weeklyPointsHistory: [WeeklyPointsBreakdown!]!
+  """
+  Per-account leaderboard position. Returns `null` when the account
+  has not yet accumulated any points.
+  """
+  leaderboard: AccountLeaderboard
+  """
+  Per-account aggregate statistics (PnL, volume, position value).
+  """
+  statistics: AccountStatistics
+  """
+  Referral programme statistics.
+  """
+  referralStatistics: ReferralStatistics!
+  """
+  Account that referred this user, if any.
+  """
+  referrer: Account
+  """
+  Paginated list of accounts referred by this account.
+  """
+  referrals(pagination: ForwardPaginationInput): AccountConnection!
+  """
+  PnL timeseries for this account. The granularity is chosen
+  automatically based on the requested interval.
+  """
+  pnlTimeseries(
+    filter: TimeseriesFilterInput!
+    pagination: ForwardPaginationInput
+  ): TimeseriesEntryConnection!
+  """
+  GTM wallet reward data for this account.
+  """
+  gtm: GtmWallet
+  """
+  Whether this account has a validated deposit on record.
+  """
+  isValidatedDeposit: Boolean
+}
+
+"""
+An instance of a badge associated with a specific account.
+
+`claimedAt` is `null` until the user calls `claimBadges`. `isDisplayed`
+controls whether the badge appears on the public profile.
+"""
+type AccountBadge {
+  badge: Badge!
+  progress: [AccountBadgeRequirementProgress!]!
+  """
+  ISO 8601 datetime when the badge was first earned, if ever.
+  """
+  earnedAt: DateTime
+  """
+  ISO 8601 datetime when the badge was claimed, if ever.
+  """
+  claimedAt: DateTime
+  isDisplayed: Boolean!
+}
+
+"""
+A paginated connection over a list of nodes.
+"""
+type AccountBadgeConnection {
+  edges: [AccountBadgeEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int
+}
+
+"""
+A single edge in a paginated connection, pairing a cursor with a node.
+"""
+type AccountBadgeEdge {
+  cursor: String!
+  node: AccountBadge!
+}
+
+"""
+Filter for the account `badges` sub-field.
+"""
+input AccountBadgeFilterInput {
+  isEarned: Boolean
+  isDisplayed: Boolean
+}
+
+"""
+Progress of an authenticated account toward a single badge requirement.
+"""
+type AccountBadgeRequirementProgress {
+  requirement: BadgeRequirement!
+  """
+  Current measured value for this requirement (e.g. account age in days).
+  """
+  current: Float!
+  """
+  ISO 8601 datetime when the requirement was first achieved, if ever.
+  """
+  achievedAt: DateTime
+}
+
+"""
+A paginated connection over a list of nodes.
+"""
+type AccountConnection {
+  edges: [AccountEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+"""
+A single edge in a paginated connection, pairing a cursor with a node.
+"""
+type AccountEdge {
+  cursor: String!
+  node: Account!
+}
+
+"""
+Per-account leaderboard ranking.
+
+Returned by `Account.leaderboard`. `null` when the account has no
+points.
+"""
+type AccountLeaderboard {
+  """
+  1-based rank on the global leaderboard.
+  """
+  rank: Int!
+  """
+  Cumulative all-time points balance.
+  """
+  totalPoints: Float!
+  """
+  Points earned in the most recent completed allocation round.
+  """
+  allocationRoundPoints: Float
+}
+
+"""
+Credentials for EIP-191 personal-sign wallet authentication.
+
+The `message` must be the exact string returned by `message(timestamp: …)`.
+The `signature` must be the 65-byte ECDSA signature over the EIP-191 hash
+of that message, hex-encoded with a `0x` prefix.
+"""
+input AccountLoginInput {
+  address: Address!
+  message: String!
+  signature: String!
+}
+
+"""
+Per-account aggregate trading statistics.
+"""
+type AccountStatistics {
+  """
+  Unrealised + realised PnL in USD.
+  """
+  pnlUsd: Float!
+  """
+  Total trading volume in USD.
+  """
+  volumeUsd: Float!
+  """
+  Current USD value of all open positions.
+  """
+  positionsValueUsd: Float!
+  """
+  Number of distinct markets this account has traded in.
+  """
+  marketsCount: Int!
+  """
+  Markets traded broken down by tag.
+  """
+  marketsCountByTag: [AccountTagCount!]!
+}
+
+"""
+Per-tag breakdown of how many markets an account has traded in.
+"""
+type AccountTagCount {
+  """
+  Tag name (e.g. `"Sports"`, `"Crypto"`).
+  """
+  name: String!
+  """
+  Number of distinct markets traded within this tag.
+  """
+  marketsCount: Int!
+}
+
+scalar Address
+
+"""
+A time-bounded rewards allocation round. Points accumulated within the round's
+`[startTime, endTime]` window are distributed as token rewards according to
+`allocationAmount`.
+
+Rounds are created in advance by the rewards team; the current in-progress
+round can be fetched with `currentAllocationRound`.
+"""
+type AllocationRound {
+  """
+  Numeric primary key. Use this as the `id` argument to `allocationRound`.
+  """
+  id: Int!
+  """
+  ISO 8601 UTC timestamp of when this round started accepting point accumulation.
+  """
+  startTime: DateTime!
+  """
+  ISO 8601 UTC timestamp of when this round closed (or will close).
+  """
+  endTime: DateTime!
+  """
+  ISO 8601 UTC timestamp of when this round record was created.
+  """
+  createdAt: DateTime!
+  """
+  Total token amount allocated across all participants in this round.
+  """
+  allocationAmount: Int!
+  """
+  The week number within the season this round belongs to.
+  """
+  week: Int!
+}
+
+"""
+Wallet address and JWT token pair returned after a successful authentication.
+"""
+type AuthPayload {
+  address: Address!
+  token: JWT!
+}
+
+"""
+A badge definition including its earning criteria.
+
+`isActive` is `false` for retired badges that can no longer be earned.
+"""
+type Badge {
+  id: ID!
+  code: BadgeCode!
+  category: BadgeCategory!
+  isActive: Boolean!
+  requirements: [BadgeRequirement!]!
+}
+
+"""
+A logical grouping for related badges.
+"""
+type BadgeCategory {
+  id: ID!
+  code: BadgeCategoryCode!
+}
+
+"""
+Grouping code that classifies the badge.
+"""
+enum BadgeCategoryCode {
+  STATUS
+}
+
+"""
+Stable identifier codes for specific achievement badges.
+"""
+enum BadgeCode {
+  OG
+  FOUNDER
+}
+
+"""
+Paginated connection of `Badge` objects.
+"""
+type BadgeConnection {
+  edges: [BadgeEdge!]!
+  pageInfo: PageInfo!
+}
+
+"""
+Edge wrapper for `Badge` in a paginated connection.
+"""
+type BadgeEdge {
+  cursor: String!
+  node: Badge!
+}
+
+"""
+Filter for the `badges` query.
+"""
+input BadgeFilterInput {
+  categories: [BadgeCategoryCode!]
+  isActive: Boolean
+}
+
+"""
+A single criterion that must be met to earn a badge.
+"""
+type BadgeRequirement {
+  type: BadgeRequirementType!
+  checkType: BadgeRequirementCheckType!
+  """
+  The numeric threshold to compare against.
+  """
+  target: Float!
+}
+
+"""
+Comparison operator used to evaluate the requirement against the target.
+"""
+enum BadgeRequirementCheckType {
+  EQUAL
+  GREATER_OR_EQUAL
+  LESS_OR_EQUAL
+}
+
+"""
+What on-chain or off-chain metric the requirement checks.
+"""
+enum BadgeRequirementType {
+  ACCOUNT_AGE
+  ACCOUNT_VOLUME
+  OG
+}
+
+scalar BigIntString
+
+"""
+Category to add to the authenticated account's bookmarks.
+"""
+input BookmarkCategoryInput {
+  """
+  The slug uniquely identifies the category (e.g. `"us-2024-election"`).
+  """
+  categorySlug: ID!
+}
+
+"""
+An on-chain bulletin board message posted to a market's contract, allowing the
+market creator or admin to surface context or updates to traders while the
+market is live.
+"""
+type BulletinBoardUpdates {
+  content: String!
+  """
+  ISO 8601 UTC timestamp of when this message was first written on-chain.
+  """
+  createdAt: DateTime!
+  """
+  ISO 8601 UTC timestamp of the most recent on-chain edit. `null` if never
+  updated after creation.
+  """
+  updatedAt: DateTime
+  """
+  Transaction hash of the on-chain bulletin board write operation.
+  """
+  transactionHash: String
+}
+
+"""
+Input for cancelling a specific list of orders by their IDs.
+"""
+input CancelOrderInput {
+  ids: [ID!]!
+}
+
+"""
+Input for cancelling all open orders within a category in one call.
+"""
+input CancelOrdersByCategoryInput {
+  categorySlug: String!
+}
+
+"""
+Returned by `cancelOrdersByCategory`.
+"""
+type CancelOrdersByCategoryResponse {
+  success: Boolean!
+  cancelledCount: Int!
+}
+
+"""
+A prediction-market category that groups one or more related markets
+around a single event or topic (e.g. "2024 US Presidential Election").
+
+`Category` is a GraphQL interface. The concrete type returned depends on
+`marketVariant`:
+- `DEFAULT` → `DefaultCategory`
+- `SPORTS_MATCH` → `SportsMatchCategory`
+- `SPORTS_TEAM_MATCH` → `SportsTeamMatchCategory`
+- `CRYPTO_UP_DOWN` → `CryptoUpDownCategory`
+- `TWEET_COUNT` → `TweetCountCategory`
+
+The `id` field is the human-readable slug, enabling stable URLs of the
+form `/category/<slug>`.
+"""
+interface Category {
+  id: ID!
+  slug: String!
+  title: String!
+  titleTranslationKey: String
+  description: String
+  imageUrl: String!
+  mobileImageUrl: String!
+  videoUri: String
+  onChainId: BigIntString
+  status: CategoryStatus!
+  marketVariant: MarketVariant!
+  resolutionProvider: ResolutionProvider!
+  isNegRisk: Boolean!
+  isYieldBearing: Boolean!
+  decimalPrecision: Int!
+  conversionFeeBps: Int
+  featuredOrder: Int
+  overrideImageUrl: String
+  holdersCount: BigIntString!
+  startsAt: DateTime!
+  endsAt: DateTime
+  createdAt: DateTime!
+  isBookmarkedByUser: Boolean!
+  statistics: CategoryStatistics!
+  tags(pagination: ForwardPaginationInput): CategoryTagConnection!
+  markets(filter: CategoryMarketsFilterInput, pagination: ForwardPaginationInput): MarketConnection!
+  comments(
+    pagination: ForwardPaginationInput
+    sortBy: CommentSortBy
+    onlyHolders: Boolean
+  ): CommentConnection!
+  similarCategories(pagination: ForwardPaginationInput): CategoryConnection!
+  timeseries(filter: TimeseriesFilterInput!, pagination: ForwardPaginationInput): TimeseriesConnection!
+}
+
+"""
+A paginated connection over a list of nodes.
+"""
+type CategoryConnection {
+  edges: [CategoryEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int
+}
+
+"""
+A single edge in a paginated connection, pairing a cursor with a node.
+"""
+type CategoryEdge {
+  cursor: String!
+  node: Category!
+}
+
+"""
+Input filter for the `categories` and `search` list queries.
+
+`tag` and `tags` are both accepted; when `tags` is present it takes
+precedence and only its first element is applied (multi-tag AND filtering
+is not yet supported).
+"""
+input CategoryFilterInput {
+  """
+  Restrict to open (`OPEN`) or resolved (`RESOLVED`) categories only.
+  """
+  status: CategoryStatus
+  """
+  Restrict to categories tagged with this single tag ID.
+  """
+  tag: ID
+  """
+  Restrict to categories tagged with any of these tag IDs. Takes precedence
+  over `tag` when both are supplied.
+  """
+  tags: [ID!]
+  """
+  Restrict to categories whose `ends_at` is before this Unix timestamp.
+  """
+  endsBefore: Timestamp
+  """
+  When `true`, restrict to categories bookmarked by the authenticated user.
+  Silently ignored for unauthenticated requests.
+  """
+  bookmarked: Boolean
+  """
+  When `true`, restrict to GTM (Go-To-Market) eligible categories.
+  """
+  gtm: Boolean
+  """
+  When `true`, restrict to categories that have started but not yet resolved.
+  """
+  isLive: Boolean
+}
+
+"""
+Resolution status filter for `Category.markets`.
+"""
+enum CategoryMarketFilterStatus {
+  """
+  Only markets that are not yet resolved.
+  """
+  OPEN
+  """
+  Only markets that have been resolved.
+  """
+  RESOLVED
+}
+
+"""
+Filter input for the `Category.markets` connection.
+"""
+input CategoryMarketsFilterInput {
+  """
+  Restrict to open (`OPEN`) or resolved (`RESOLVED`) markets only.
+  Omit to return all markets.
+  """
+  status: CategoryMarketFilterStatus
+}
+
+enum CategorySortInput {
+  MOST_POPULAR
+  VOLUME_24H_DESC
+  VOLUME_ALL_DESC
+  STARTS_AT_ASC
+  STARTS_AT_DESC
+}
+
+"""
+Aggregated volume and liquidity statistics for a category.
+
+All monetary values are in USD.
+"""
+type CategoryStatistics {
+  """
+  Total USDT liquidity currently posted across all markets in this category.
+  """
+  liquidityValueUsd: Float!
+  """
+  Cumulative all-time trading volume across all markets in this category.
+  """
+  volumeTotalUsd: Float!
+  """
+  Trading volume across all markets in this category over the past 24 hours.
+  """
+  volume24hUsd: Float!
+  """
+  Highest single winning payout across any market in this category.
+  """
+  topWinUsd: Float!
+}
+
+"""
+Lifecycle status of a category.
+
+A category transitions to `RESOLVED` once all of its constituent markets
+have been settled on-chain.
+"""
+enum CategoryStatus {
+  OPEN
+  RESOLVED
+}
+
+"""
+Filter for `nextCategories` on a `CryptoUpDownCategory`.
+
+Controls which Chainlink categories are included based on their temporal
+state relative to the current time:
+- `ONGOING`: started but not yet ended.
+- `UPCOMING`: not yet started.
+"""
+enum CategoryStatusFilter {
+  ONGOING
+  UPCOMING
+}
+
+type CategoryTag {
+  """
+  Numeric tag ID serialised as a string.
+  """
+  id: ID!
+  """
+  Human-readable tag label (e.g. `"Sports"`, `"Crypto"`, `"Politics"`).
+  """
+  name: String!
+  """
+  Direct child tags of this tag.
+  """
+  children: [CategoryTag!]!
+  """
+  Parent tag of this tag, or `null` if this is a top-level tag.
+  """
+  parent: CategoryTag
+}
+
+"""
+A paginated connection over a list of nodes.
+"""
+type CategoryTagConnection {
+  edges: [CategoryTagEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int
+}
+
+"""
+A single edge in a paginated connection, pairing a cursor with a node.
+"""
+type CategoryTagEdge {
+  cursor: String!
+  node: CategoryTag!
+}
+
+type Comment {
+  id: ID!
+  content: String!
+  createdAt: DateTime!
+  updatedAt: DateTime
+  likeCount: Int!
+  replyCount: Int!
+  reportCount: Int!
+  isLikedByUser: Boolean!
+  account: Account!
+  parentComment: Comment
+  replyToComment: Comment
+  replies(pagination: ForwardPaginationInput): CommentConnection!
+}
+
+"""
+Paginated connection of comments.
+"""
+type CommentConnection {
+  totalCount: Int
+  edges: [CommentEdge!]!
+  pageInfo: PageInfo!
+}
+
+"""
+Edge wrapper for `Comment` in a paginated connection.
+"""
+type CommentEdge {
+  cursor: String!
+  node: Comment!
+}
+
+"""
+Sort order for comment lists.
+"""
+enum CommentSortBy {
+  NEWEST
+  MOST_LIKED
+}
+
+"""
+OAuth code-exchange payload for linking a Twitter/X account.
+"""
+input ConnectTwitterInput {
+  """
+  The OAuth 2.0 authorisation code returned by Twitter after the user
+  completes the consent screen.
+  """
+  code: String!
+  """
+  PKCE code verifier matching the challenge sent in the initial auth request.
+  """
+  codeVerifier: String!
+  redirectUri: String!
+}
+
+"""
+Full on-chain order creation input matching the CTF Exchange `Order`
+struct.
+
+All Wei-denomination fields use `BigIntString` to preserve precision
+beyond JavaScript's 53-bit safe integer range.
+"""
+input CreateOrderInput {
+  hash: String!
+  amount: BigIntString!
+  feeRateBps: Int!
+  makerFeeBps: Int!
+  takerFeeBps: Int!
+  marketId: Int!
+  nonce: Int!
+  priceInCurrency: BigIntString!
+  quoteType: Boolean!
+  expiresAt: DateTime!
+  signature: String!
+  signatureType: Int!
+  signer: Address!
+  maker: Address!
+  slippageBps: Int!
+  strategy: String!
+  tokenId: String!
+  salt: String!
+  currency: CurrencyName!
+  isFillOrKill: Boolean!
+  isPostOnly: Boolean
+  takerAmount: BigIntString!
+  makerAmount: BigIntString!
+  reservedBalancePolicy: ReservedBalancePolicy
+  isMinAmountOut: Boolean
+}
+
+"""
+Returned by `createOrder`.
+
+`code` is `null` on success (i.e. `Ok`). `order` is `null` on failure.
+"""
+type CreateOrderMutationResponse {
+  order: Order
+  code: OrderCreateCode
+}
+
+"""
+Per-market crypto price band data for a `CryptoUpDownCategory`.
+"""
+type CryptoMarketData {
+  marketId: ID!
+  priceFeedId: ID
+  priceFeedSymbol: String
+  priceFeedProvider: PriceFeedProvider!
+  startPrice: Float
+  startPricePublishTime: DateTime
+  endPrice: Float
+  endPricePublishTime: DateTime
+}
+
+type CryptoUpDownCategory implements Category {
+  id: ID!
+  slug: String!
+  title: String!
+  titleTranslationKey: String
+  description: String
+  imageUrl: String!
+  mobileImageUrl: String!
+  videoUri: String
+  onChainId: BigIntString
+  status: CategoryStatus!
+  marketVariant: MarketVariant!
+  resolutionProvider: ResolutionProvider!
+  isNegRisk: Boolean!
+  isYieldBearing: Boolean!
+  decimalPrecision: Int!
+  conversionFeeBps: Int
+  featuredOrder: Int
+  overrideImageUrl: String
+  holdersCount: BigIntString!
+  startsAt: DateTime!
+  endsAt: DateTime
+  createdAt: DateTime!
+  isBookmarkedByUser: Boolean!
+  statistics: CategoryStatistics!
+  tags(pagination: ForwardPaginationInput): CategoryTagConnection!
+  markets(filter: CategoryMarketsFilterInput, pagination: ForwardPaginationInput): MarketConnection!
+  comments(
+    pagination: ForwardPaginationInput
+    sortBy: CommentSortBy
+    onlyHolders: Boolean
+  ): CommentConnection!
+  similarCategories(pagination: ForwardPaginationInput): CategoryConnection!
+  timeseries(filter: TimeseriesFilterInput!, pagination: ForwardPaginationInput): TimeseriesConnection!
+  marketData: [CryptoMarketData!]!
+  """
+  Paginated list of previous iterations of this recurring category,
+  ordered newest-first.
+  """
+  previousCategories(pagination: ForwardPaginationInput): CategoryConnection!
+  """
+  Paginated list of next (future) iterations of this recurring Chainlink category.
+
+  Only Chainlink categories have a well-defined next iteration. For all other
+  resolution providers an empty connection is returned.
+
+  The optional `statuses` argument filters results by temporal state: `ONGOING`
+  for categories that have started but not ended, `UPCOMING` for those not yet
+  started. Omitting the argument returns all next categories regardless of status.
+  """
+  nextCategories(pagination: ForwardPaginationInput, statuses: [CategoryStatusFilter!]): CategoryConnection!
+}
+
+"""
+Settlement currency for the order.
+"""
+enum Currency {
+  USDT
+  USDC
+}
+
+"""
+Canonical currency name used in order creation inputs.
+"""
+enum CurrencyName {
+  USDT
+  USDC
+}
+
+scalar DateTime
+
+type DefaultCategory implements Category {
+  id: ID!
+  slug: String!
+  title: String!
+  titleTranslationKey: String
+  description: String
+  imageUrl: String!
+  mobileImageUrl: String!
+  videoUri: String
+  onChainId: BigIntString
+  status: CategoryStatus!
+  marketVariant: MarketVariant!
+  resolutionProvider: ResolutionProvider!
+  isNegRisk: Boolean!
+  isYieldBearing: Boolean!
+  decimalPrecision: Int!
+  conversionFeeBps: Int
+  featuredOrder: Int
+  overrideImageUrl: String
+  holdersCount: BigIntString!
+  startsAt: DateTime!
+  endsAt: DateTime
+  createdAt: DateTime!
+  isBookmarkedByUser: Boolean!
+  statistics: CategoryStatistics!
+  tags(pagination: ForwardPaginationInput): CategoryTagConnection!
+  markets(filter: CategoryMarketsFilterInput, pagination: ForwardPaginationInput): MarketConnection!
+  comments(
+    pagination: ForwardPaginationInput
+    sortBy: CommentSortBy
+    onlyHolders: Boolean
+  ): CommentConnection!
+  similarCategories(pagination: ForwardPaginationInput): CategoryConnection!
+  timeseries(filter: TimeseriesFilterInput!, pagination: ForwardPaginationInput): TimeseriesConnection!
+}
+
+input DeleteCommentInput {
+  id: ID!
+}
+
+"""
+The final score of a resolved or in-progress sports match.
+"""
+type FinalScore {
+  homeScore: Int!
+  awayScore: Int!
+  updatedAt: String!
+}
+
+"""
+Standard GraphQL forward-pagination arguments.
+"""
+input ForwardPaginationInput {
+  """
+  Maximum number of items to return.
+  """
+  first: Int
+  """
+  Opaque cursor — return items after this position.
+  """
+  after: String
+}
+
+"""
+GTM (Go-To-Market) wallet reward data for an account.
+"""
+type GtmWallet {
+  isGtmEnded: Boolean!
+  claimedAt: DateTime
+  points: Float!
+  targetVolume: BigIntString!
+  targetVolumeUsd: Float!
+  actualVolume: BigIntString!
+  actualVolumeUsd: Float!
+  tweetValidationUrl: String
+  label: String
+  tags: [String!]!
+}
+
+"""
+Visibility state of the account's profile picture.
+
+- `PUBLIC`: the image is visible to all users.
+- `PRIVATE`: the owner has hidden the image.
+- `BLOCKED`: the content-moderation pipeline marked the image as unsafe and
+it has been suppressed.
+"""
+enum ImageStatus {
+  PUBLIC
+  PRIVATE
+  BLOCKED
+}
+
+"""
+Outcome determined by the NSFW content classifier for an uploaded image.
+"""
+enum ImageValidationOutcome {
+  """
+  Image passed all safety checks.
+  """
+  SAFE
+  """
+  Image was classified as not-safe-for-work and has been suppressed.
+  """
+  NSFW
+  """
+  The validation pipeline itself failed (e.g. network or timeout error).
+  """
+  FAILED
+}
+
+"""
+Result of the `imageValidationStatus` query, describing the outcome of a
+background NSFW-check job initiated by `uploadProfilePicture`.
+
+The `validationJobId` is the same opaque Base64 string that
+`uploadProfilePicture` returned. Poll this until `status` is `COMPLETED`
+or `FAILED` before presenting the new image to other users.
+"""
+type ImageValidationStatus {
+  """
+  The opaque job identifier originally returned by `uploadProfilePicture`.
+  """
+  validationJobId: String!
+  """
+  Current lifecycle state of the validation job.
+  """
+  status: ValidationJobStatus!
+  """
+  Safety classification determined by the validator, if the job has
+  finished. `null` while the job is still `PENDING` or `STARTED`.
+  """
+  outcome: ImageValidationOutcome
+}
+
+scalar JWT
+
+"""
+The most recently settled order for a market, as surfaced by the orderbook cache.
+"""
+type LastOrderSettled {
+  id: String!
+  price: String!
+  kind: String!
+  marketId: Int!
+  side: String!
+  outcome: String!
+}
+
+"""
+A paginated connection over a list of nodes.
+"""
+type LeaderboardConnection {
+  edges: [LeaderboardEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int
+}
+
+"""
+A single edge in a paginated connection, pairing a cursor with a node.
+"""
+type LeaderboardEdge {
+  cursor: String!
+  node: LeaderboardEntry!
+}
+
+"""
+A single entry on the global points leaderboard.
+
+`rank` is 1-based (rank 1 = highest points total). Ties are broken
+deterministically.
+"""
+type LeaderboardEntry {
+  """
+  1-based rank on the global leaderboard.
+  """
+  rank: Int!
+  """
+  Cumulative all-time points balance for this account.
+  """
+  totalPoints: Float!
+  """
+  Points earned in the most recent completed allocation round.
+  """
+  allocationRoundPoints: Float
+  """
+  ID of the allocation round that `allocationRoundPoints` was computed from.
+  """
+  allocationRoundId: Int
+  """
+  The account that owns this leaderboard position.
+  """
+  account: Account!
+}
+
+input LikeCommentInput {
+  commentId: ID!
+}
+
+"""
+Returned by `login` and `loginWithPrivy`.
+"""
+type LoginMutationResponse {
+  """
+  `null` when authentication fails (e.g. bad or missing signature).
+  """
+  auth: AuthPayload
+}
+
+type Market {
+  """
+  Numeric ID of this market, serialised as a string. Use this as the
+  `id` argument to the `market` query.
+  """
+  id: ID!
+  title: String!
+  titleTranslationKey: String
+  question: String!
+  description: String
+  imageUrl: String!
+  """
+  Maker rebate/fee in basis points. A negative value means market makers
+  receive a rebate on each matched trade (maker-rebate model).
+  """
+  makerFeeBps: Int!
+  """
+  Taker fee in basis points deducted from each matched trade.
+  """
+  takerFeeBps: Int!
+  """
+  Current on-chain market status.
+  """
+  status: MarketStatus!
+  """
+  Sort index within the parent category's ordered market list.
+  """
+  categoryPosition: Int!
+  decimalPrecision: Int!
+  """
+  When `false`, order placement is disabled for this market (e.g. during
+  resolution or maintenance).
+  """
+  isTradingEnabled: Boolean!
+  """
+  `true` if a fee multiplier promotion is currently active. See
+  `feeMultiplierStartTime` / `feeMultiplierEndTime` for the window.
+  """
+  feeMultiplier: Boolean!
+  """
+  ISO 8601 UTC start of the fee multiplier promotion. `null` means the
+  promotion applies from market open.
+  """
+  feeMultiplierStartTime: DateTime
+  """
+  ISO 8601 UTC end of the fee multiplier promotion. `null` means the promotion
+  applies until market resolution.
+  """
+  feeMultiplierEndTime: DateTime
+  """
+  Whether a point-cap modifier is active for this market. When `true`, the
+  maximum points a user can earn per-trade is scaled by a configured multiplier.
+  """
+  pointCapModifier: Boolean!
+  """
+  Reward timing windows for this market, ordered by start time ascending.
+  Each window defines the date range and per-minute point rate.
+  Returns an empty list when no reward timings have been configured.
+  """
+  rewardTimings: [MarketRewardTiming!]!
+  """
+  ISO 8601 UTC timestamp of when this market was created.
+  """
+  createdAt: DateTime!
+  """
+  UMA/Polymarket condition ID (`bytes32` hex) that uniquely identifies this
+  market on-chain. Used to look up positions in the conditional token framework.
+  """
+  conditionId: String!
+  """
+  Identifier registered with the oracle for the question that resolves this
+  market (e.g. a UMA ancillary data hash).
+  """
+  oracleQuestionId: String!
+  """
+  Transaction hash of the oracle question registration transaction.
+  Currently always `null` — reserved for future use.
+  """
+  oracleTxHash: String
+  """
+  Ethereum address (checksummed hex) of the resolver contract that will
+  settle this market on-chain.
+  """
+  resolverAddress: Address!
+  """
+  Minimum required spread before the market is considered healthy,
+  returned as a decimal string to preserve precision.
+  """
+  spreadThreshold: BigIntString!
+  """
+  Minimum share volume before the market is considered active, returned
+  as a decimal string to preserve precision.
+  """
+  shareThreshold: BigIntString!
+  """
+  Zero-based index of this market's binary question within its parent
+  neg-risk category. For categories with a single market this is always `0`.
+  `null` for markets not associated with a neg-risk category.
+  """
+  questionIndex: Int
+  """
+  Pre-computed statistics for this market.
+  """
+  statistics: MarketStatistics!
+  """
+  Implied probability of the YES outcome expressed as a percentage (0–100),
+  derived from the most recent matched price. `null` for markets with no
+  matched trades.
+  """
+  chancePercentage: Float
+  """
+  Live orderbook snapshot for this market. Sourced from a real-time
+  cache layer, so it may lag by a few seconds.
+  """
+  orderbook: MarketOrderbook
+  """
+  Total USD liquidity within the market's configured spread window
+  around the midpoint.
+
+  `spreadThreshold` defines the full allowed window in Wei; eligible
+  levels are those within `spreadThreshold / 1e18 / 2` of the midpoint.
+  Returns `null` for one-sided books, unknown markets, or when
+  `spreadThreshold` is unset.
+  """
+  nearMidpointLiquidityUsd: Float
+  """
+  The winning outcome for a resolved market, identified by `status = true` on
+  the outcome record. Returns `null` for unresolved markets or markets with no
+  outcomes.
+  """
+  resolution: Outcome
+  """
+  All outcomes (i.e. answer choices) for this market, typically `["Yes", "No"]`
+  for binary markets. Outcomes are not paginated in practice — most markets
+  have two.
+  """
+  outcomes(filter: OutcomeFilterInput): OutcomeConnection!
+  """
+  Historical status transitions for this market (e.g. open → proposed →
+  resolved), ordered oldest-first.
+
+  When the 3PO resolution flow has produced any log entry for this
+  market, `PRICE_PROPOSED` entries from the default oracle are
+  suppressed — the 3PO flow supersedes the default proposal.
+
+  Connection pagination is nominal: the full set is always returned in a
+  single page (markets accumulate at most a handful of status transitions).
+  """
+  statusLogs: MarketStatusLogConnection!
+  """
+  On-chain bulletin-board messages posted to this market, oldest first.
+  """
+  bulletinBoardUpdates: [BulletinBoardUpdates!]!
+  """
+  Authenticated view of the caller's open/matched/cancelled orders in
+  this market.
+
+  Unauthenticated requests always receive an empty connection rather
+  than an auth error, so logged-out users can still render market
+  detail pages without branching on auth state client-side.
+  """
+  orders(filter: OrderFilterInput, pagination: ForwardPaginationInput): OrderConnection!
+  """
+  The parent category of this market.
+  """
+  category: Category!
+}
+
+"""
+A paginated connection over a list of nodes.
+"""
+type MarketConnection {
+  edges: [MarketEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int
+}
+
+"""
+A single edge in a paginated connection, pairing a cursor with a node.
+"""
+type MarketEdge {
+  cursor: String!
+  node: Market!
+}
+
+"""
+Input filter for the `markets` list query.
+
+`tag` and `tags` follow the same precedence rules as `CategoryFilterInput`:
+when `tags` is present, its first element is used and `tag` is ignored.
+"""
+input MarketFilterInput {
+  """
+  Restrict to markets belonging to a specific category (numeric ID).
+  """
+  categoryId: ID
+  """
+  When `true`, include only resolved markets. When `false`, include only
+  unresolved markets. Omit to return both.
+  """
+  isResolved: Boolean
+  """
+  When `true`, include only markets with an active fee multiplier promotion.
+  """
+  isBoosted: Boolean
+  """
+  Restrict to markets whose parent category ends before this Unix timestamp.
+  """
+  endsBefore: Timestamp
+  """
+  Restrict to markets tagged with this single tag ID.
+  """
+  tag: ID
+  """
+  Restrict to markets tagged with any of these tag IDs. Takes precedence over
+  `tag` when both are supplied.
+  """
+  tags: [ID!]
+  """
+  Restrict to markets of a specific variant (e.g. `SPORTS_MATCH`).
+  """
+  marketVariant: MarketVariant
+  """
+  When `true`, restrict to markets bookmarked by the authenticated user.
+  Silently ignored for unauthenticated requests.
+  """
+  bookmarked: Boolean
+}
+
+"""
+Live orderbook snapshot for a market. Sourced from a real-time cache layer
+so values may lag by up to a few seconds.
+
+`asks` and `bids` are each a list of `[price, size]` pairs sorted by price
+ascending (asks) or descending (bids).
+"""
+type MarketOrderbook {
+  marketId: Int!
+  """
+  Millisecond Unix timestamp of when this snapshot was last updated.
+  """
+  updateTimestampMs: Float!
+  """
+  The most recently settled order for this market, if any.
+  """
+  lastOrderSettled: LastOrderSettled
+  """
+  List of `[price, size]` ask (sell) orders, sorted price ascending.
+  """
+  asks: [[Float!]!]!
+  """
+  List of `[price, size]` bid (buy) orders, sorted price descending.
+  """
+  bids: [[Float!]!]!
+}
+
+"""
+A single reward timing window for a market, defining when and at what rate
+points are awarded to traders.
+"""
+type MarketRewardTiming {
+  """
+  ISO 8601 UTC start of the reward window.
+  """
+  startTime: DateTime!
+  """
+  ISO 8601 UTC end of the reward window.
+  """
+  endTime: DateTime!
+  """
+  Points awarded per minute of trading activity during this window.
+  """
+  minuteRate: Int! @deprecated(reason: "Use hourlyRate instead")
+  """
+  Points awarded per hour of trading activity during this window.
+  """
+  hourlyRate: Int
+}
+
+"""
+Sort modes for the `markets` list query.
+"""
+enum MarketSortInput {
+  VOLUME_24H_DESC
+  VOLUME_24H_ASC
+  VOLUME_TOTAL_DESC
+  VOLUME_TOTAL_ASC
+  PRIORITY_ASC
+  PRIORITY_DESC
+  CHANCE_ASC
+  CHANCE_DESC
+  VOLUME_24H_CHANGE_ASC
+  VOLUME_24H_CHANGE_DESC
+  CHANCE_24H_CHANGE_ASC
+  CHANCE_24H_CHANGE_DESC
+}
+
+"""
+Aggregated volume and liquidity statistics for a single market.
+
+Values are updated asynchronously and may lag by up to a few minutes
+during high-volume periods. All monetary values are in USD.
+"""
+type MarketStatistics {
+  """
+  Total USDT liquidity currently resting on the order book for this market.
+  """
+  totalLiquidityUsd: Float!
+  """
+  Cumulative all-time trading volume for this market.
+  """
+  volumeTotalUsd: Float!
+  """
+  Trading volume over the past 24 hours.
+  """
+  volume24hUsd: Float!
+  """
+  Absolute change in 24 h volume compared with the prior 24 h window.
+  `null` if insufficient history exists.
+  """
+  volume24hChangeUsd: Float
+  """
+  Change in the implied probability (chance percentage) over the past 24 hours,
+  in percentage points. `null` if insufficient history exists.
+  """
+  percentageChanceChange24h: Float
+}
+
+"""
+On-chain lifecycle status of a market.
+
+The progression through these states roughly mirrors the UMA optimistic
+oracle dispute lifecycle:
+
+`INITIALIZING` → `INITIALIZED` → `CREATING` → `CREATED` → `REGISTERED` →
+(normal close) `PRICE_PROPOSED` → `RESOLVED`
+or (dispute)   `PRICE_DISPUTED` → `PRICE_PROPOSED` → …
+
+`PAUSED` / `UNPAUSED` can occur at any point after `REGISTERED` if the
+market is temporarily suspended.
+"""
+enum MarketStatus {
+  INITIALIZING
+  INITIALIZED
+  CREATING
+  CREATED
+  REGISTERED
+  PRICE_PROPOSED
+  PRICE_DISPUTED
+  PAUSED
+  UNPAUSED
+  RESOLVED
+}
+
+"""
+One entry in a market's lifecycle log, recording each on-chain state transition
+(e.g. open → proposed → resolved) together with the transaction details.
+
+The `proposedOutcomeId` and `proposedOutcomeLabel` fields are only populated for
+entries where the market has entered a `PROPOSED` state and a specific outcome
+has been nominated for resolution.
+"""
+type MarketStatusLog {
+  status: MarketStatus!
+  """
+  ISO 8601 UTC timestamp of the on-chain transaction that produced this log entry.
+  """
+  timestamp: DateTime!
+  transactionHash: String!
+  """
+  Position of this log entry within its block. `null` for off-chain status
+  transitions that have no block context.
+  """
+  logIndex: Int
+  """
+  Numeric ID of the outcome that was proposed for resolution. Only set for
+  `PROPOSED` entries.
+  """
+  proposedOutcomeId: Int
+  """
+  Human-readable label of the proposed outcome (e.g. `"Yes"`). Only set for
+  `PROPOSED` entries.
+  """
+  proposedOutcomeLabel: String
+  """
+  Identifier of the oracle service that triggered this status transition.
+  """
+  resolutionProviderTypeId: Int!
+}
+
+"""
+A paginated connection over a list of nodes.
+"""
+type MarketStatusLogConnection {
+  edges: [MarketStatusLogEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int
+}
+
+"""
+A single edge in a paginated connection, pairing a cursor with a node.
+"""
+type MarketStatusLogEdge {
+  cursor: String!
+  node: MarketStatusLog!
+}
+
+"""
+Market variant, controlling the UI template and trading mechanics.
+
+- `DEFAULT`: standard binary yes/no market.
+- `SPORTS_MATCH`: two-sided match between named teams with a sport-specific layout.
+- `SPORTS_TEAM_MATCH`: like `SPORTS_MATCH` but the teams are resolved from a
+team registry rather than free-text labels.
+- `CRYPTO_UP_DOWN`: price-based up/down market with a crypto-specific UI.
+- `TWEET_COUNT`: market resolving based on a tweet engagement metric.
+"""
+enum MarketVariant {
+  DEFAULT
+  SPORTS_MATCH
+  CRYPTO_UP_DOWN
+  TWEET_COUNT
+  SPORTS_TEAM_MATCH
+}
+
+type MatchEventLog {
+  transactionHash: String!
+  amountFilled: BigIntString!
+  priceExecuted: BigIntString!
+  quoteType: OrderQuoteType!
+  timestamp: DateTime!
+  """
+  The market in which this fill event occurred.
+  """
+  market: Market!
+  """
+  The specific outcome (YES/NO position) that was traded.
+  """
+  outcome: Outcome!
+  """
+  The account that initiated the taker side of this match.
+  """
+  account: Account!
+}
+
+"""
+A paginated connection over a list of nodes.
+"""
+type MatchEventLogConnection {
+  edges: [MatchEventLogEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int
+}
+
+"""
+A single edge in a paginated connection, pairing a cursor with a node.
+"""
+type MatchEventLogEdge {
+  cursor: String!
+  node: MatchEventLog!
+}
+
+"""
+Input filter for the `matchEventLog` query.
+
+All filter fields are optional and are combined with AND semantics.
+"""
+input MatchEventLogFilterInput {
+  """
+  Restrict to fills that occurred in markets belonging to this category.
+  """
+  categoryId: ID
+  """
+  Restrict to fills that occurred in a specific market (numeric ID).
+  """
+  marketId: ID
+  """
+  Exclude fills whose notional value is below this threshold, expressed as
+  a Wei (1e18) string in USDT. Useful for filtering out dust trades.
+  """
+  minValueUsdtWei: BigIntString
+  """
+  Restrict to specific event types.
+  """
+  eventTypes: [OrderEventLogType!]
+}
+
+"""
+Composite mutation root assembled from domain-specific mutation objects.
+
+Each domain owns its mutations:
+- `AuthMutation` — login, logout, validateJwt
+- `AccountMutation` — profile updates, referrals, GTM rewards
+- `CategoryMutation` — bookmarks
+- `OrderMutation` — order creation and cancellation
+- `CommentMutation` — comment threads
+- `BadgeMutation` — badge claims and display
+- `OAuthMutation` — OAuth session lifecycle
+"""
+type Mutation {
+  """
+  Authenticate with an EIP-191 wallet signature. The `message` field must
+  match the value returned by `message(timestamp: …)` for a recent timestamp.
+  On success the returned JWT should be sent as `Authorization: Bearer <token>`
+  on all subsequent authenticated requests.
+
+  Tokens older than 24 hours are still valid but are downgraded to
+  `READ_PROTECTED` scope — write operations will be rejected.
+  """
+  login(data: AccountLoginInput!): LoginMutationResponse!
+  """
+  Authenticate using a Privy session. Requires the `Privy-Authentication`
+  header to be set to a valid Privy access token. On success issues a
+  standard JWT for the address linked to the Privy session.
+  """
+  loginWithPrivy(data: PrivyAccountLoginInput!): LoginMutationResponse!
+  """
+  Check whether the `Authorization: Bearer` token on this request is still
+  valid. Returns `success: true` when the token is valid and unexpired.
+  """
+  validateJwt: ValidateJwt!
+  """
+  Invalidate the current session. For JWT-based sessions the server has no
+  token blacklist, so this is currently a no-op — clients should discard
+  the token locally.
+  """
+  logout: Void
+  """
+  Update mutable fields on the authenticated account's profile. At least
+  one field must be provided. Returns the updated account on success.
+  """
+  updateAccount(data: UpdateAccountInput!): UpdateAccountMutationResponse!
+  """
+  Link a Twitter/X account by exchanging an OAuth 2.0 PKCE authorisation
+  code. When `TWITTER_CLIENT_ID` / `TWITTER_CLIENT_SECRET` are not
+  configured the mutation is a no-op and returns `null`.
+  """
+  connectTwitter(data: ConnectTwitterInput!): Void
+  """
+  Remove the Twitter/X account link from the authenticated account.
+  """
+  disconnectTwitter: Void
+  """
+  Upload a new profile picture. Accepts a JPEG or PNG (≤ 5 MB) via
+  multipart upload and enqueues an NSFW validation job. Poll
+  `imageValidationStatus(validationJobId: …)` until the job completes
+  before treating the image as publicly visible.
+  """
+  uploadProfilePicture(file: Upload!): UploadProfilePictureMutationResponse!
+  """
+  Attach an allocation wallet address to the authenticated account for
+  rewards distribution in allocation rounds. Only one address can be active
+  at a time; calling this again replaces the previous address.
+  """
+  linkAllocationWallet(address: Address!): Void
+  """
+  Mark the authenticated account's smart wallet as having completed the
+  on-chain points-operator approval flow. Must be called before the rewards
+  pipeline will distribute points to this smart wallet.
+  """
+  setSmartWalletPointsOperatorConfigured: Void
+  """
+  Record a referral relationship. The `referralCode` must belong to an
+  existing account. This can only be called once per account; subsequent
+  calls will fail if a referral is already set.
+  """
+  addReferrer(referralCode: String!): Void
+  """
+  Check whether the authenticated account has a sufficient USDT balance to
+  unlock their referral code. If the threshold is met, a deposit-validation
+  row is written so that subsequent `account.referralCode` queries return
+  the code instead of `null`.
+
+  Mirrors the TypeScript `MutationValidateDeposit` which calls
+  `usdtContract.balanceOf(auth.value.address)` on-chain and then
+  `accountRepo.upsertDepositValidation`.
+  """
+  validateDeposit(address: Address!): ValidateDepositResponse!
+  """
+  Set or update the tweet URL used for GTM (Go-To-Market) tweet-volume
+  validation. The tweet is polled to compute engagement-based point
+  rewards.
+  """
+  updateGtmTweetValidationUrl(tweetValidationUrl: String!): Void
+  """
+  Claim any pending GTM points that have accrued on the authenticated
+  account. Sets `claimedAt` in `gtm.wallet`, which the rewards pipeline
+  uses to mark this wallet's GTM reward as processed.
+  """
+  claimGtmPoints: Void
+  """
+  Save a category to the authenticated account's bookmark list.
+  Bookmarks are visible in the `account.bookmarkedCategories` field.
+  Bookmarking an already-bookmarked category is a no-op.
+  """
+  bookmarkCategory(data: BookmarkCategoryInput!): Void
+  """
+  Remove a category from the authenticated account's bookmark list.
+  Unbookmarking a category that is not bookmarked is a no-op.
+  """
+  unbookmarkCategory(data: UnbookmarkCategoryInput!): Void
+  """
+  Submit a new limit or market order to the exchange.
+
+  Performs full validation (EIP-712 hash, operator approval, and
+  collateral / share balance) before persisting the order. If on-chain
+  validation exceeds the configured timeout, the order is optimistically
+  accepted and validated asynchronously.
+  """
+  createOrder(data: CreateOrderInput!): CreateOrderMutationResponse!
+  """
+  Cancel one or more open orders by their IDs. All IDs must belong to the
+  authenticated account.
+  """
+  cancelOrder(data: CancelOrderInput!): Boolean!
+  """
+  Cancel all open orders the authenticated account holds within a category.
+  A no-op if the account has no open orders in that category.
+  """
+  cancelOrdersByCategory(data: CancelOrdersByCategoryInput!): CancelOrdersByCategoryResponse!
+  """
+  Post a new comment or reply on a category's discussion thread.
+
+  Requires authentication. Content must be 1–5 000 characters.
+  Set `parentCommentId` to nest the comment as a reply under an existing
+  thread; leave `null` for a top-level comment.
+  """
+  postComment(data: PostCommentInput!): Void
+  """
+  Soft-delete a comment posted by the authenticated account.
+
+  Only the comment's author may delete it; attempts to delete another
+  user's comment are silently ignored (no error is returned).
+  """
+  deleteComment(data: DeleteCommentInput!): Void
+  """
+  Like a comment. Liking a comment you have already liked is a no-op.
+  """
+  likeComment(data: LikeCommentInput!): Void
+  """
+  Remove a like from a comment. No-ops if the comment was not liked.
+  """
+  unlikeComment(data: UnlikeCommentInput!): Void
+  """
+  Flag a comment for moderator review. Duplicate reports from the same
+  account are silently ignored.
+  """
+  reportComment(data: ReportCommentInput!): Void
+  """
+  Update the set of badges displayed on the authenticated account's public profile.
+  """
+  setDisplayedBadges(badgeIds: [ID!]!): [AccountBadge!]!
+  """
+  Attempt to claim one or more badges for the authenticated account.
+  """
+  claimBadges(badgeIds: [ID!]!): [AccountBadge!]!
+  """
+  Initiate an OAuth 2.0 authorisation session for a third-party client.
+  """
+  initiateOAuthSession(data: OAuthInitiateInput!): OAuthInitiateMutationResponse!
+  """
+  Revoke a previously granted OAuth session by client ID.
+  """
+  revokeOAuthSession(clientId: ID!): Void
+}
+
+"""
+Public details of a registered OAuth client application.
+
+Returned by `oauthClientDetails` to let users review what application is
+requesting access before granting an OAuth session.
+"""
+type OAuthClientDetails {
+  clientId: ID!
+  name: String!
+  description: String!
+  redirectUri: String!
+  imageUrl: String!
+}
+
+"""
+Input to initiate an OAuth authorisation session with a third-party client.
+
+The client provides a pre-generated `sessionKey` (an ephemeral signing key)
+and a `nonce` for replay protection.
+"""
+input OAuthInitiateInput {
+  """
+  The registered client ID of the third-party application.
+  """
+  clientId: ID!
+  """
+  The on-chain validator address for the OAuth session.
+  """
+  oauthValidator: String!
+  """
+  The ephemeral session signing key generated by the client.
+  """
+  sessionKey: String!
+  """
+  Replay-protection nonce.
+  """
+  nonce: Int!
+  scope: [OAuthSessionScope!]!
+}
+
+"""
+Returned when an OAuth session is successfully initiated.
+
+The `authCode` is passed to the redirect URI and exchanged by the
+third-party client for an access token. It expires at `validUntil`.
+"""
+type OAuthInitiateMutationResponse {
+  authCode: String!
+  """
+  ISO 8601 expiry datetime for the authorisation code.
+  """
+  validUntil: DateTime!
+}
+
+"""
+A live OAuth session granted to a third-party client application.
+
+Sessions are created by `initiateOAuthSession` and can be revoked by
+`revokeOAuthSession`. Each session is scoped to specific permissions.
+"""
+type OAuthSession {
+  clientId: ID!
+  name: String!
+  description: String!
+  imageUrl: String!
+  """
+  Permissions granted to this session.
+  """
+  scope: [OAuthSessionScope!]!
+  """
+  ISO 8601 datetime when this session was created.
+  """
+  createdAt: DateTime!
+}
+
+"""
+A paginated connection over a list of nodes.
+"""
+type OAuthSessionConnection {
+  edges: [OAuthSessionEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int
+}
+
+"""
+A single edge in a paginated connection, pairing a cursor with a node.
+"""
+type OAuthSessionEdge {
+  cursor: String!
+  node: OAuthSession!
+}
+
+"""
+Access scope granted by an OAuth session.
+"""
+enum OAuthSessionScope {
+  """
+  Read-only access: the client can query orders but cannot submit them.
+  """
+  READ_ORDER
+  """
+  Read-write access: the client can submit and cancel orders.
+  """
+  WRITE_ORDER
+}
+
+"""
+A single OHLC price bar.
+"""
+type OhlcBar {
+  """
+  Unix seconds timestamp of the bar open.
+  """
+  timestamp: Float!
+  open: Float!
+  high: Float!
+  low: Float!
+  close: Float!
+}
+
+"""
+Paginated connection of OHLC bars.
+"""
+type OhlcBarConnection {
+  edges: [OhlcBarEdge!]!
+  pageInfo: PageInfo!
+}
+
+"""
+Edge wrapper for `OhlcBar` in a paginated connection.
+"""
+type OhlcBarEdge {
+  cursor: String!
+  node: OhlcBar!
+}
+
+"""
+Resolution (bar size) for the `assetOhlc` query.
+"""
+enum OhlcResolution {
+  _1s
+  _1m
+  _5m
+  _1H
+  _4H
+  _1D
+}
+
+"""
+A complete OHLC series for a given price feed and resolution.
+"""
+type OhlcSeries {
+  """
+  The price feed ID that this series covers.
+  """
+  priceFeedId: ID!
+  resolution: OhlcResolution!
+  data: OhlcBarConnection!
+}
+
+type Order {
+  id: ID!
+  amount: BigIntString!
+  hash: String!
+  feeRateBps: Int!
+  makerFeeBps: Int!
+  takerFeeBps: Int!
+  nonce: Int!
+  priceInCurrency: BigIntString!
+  quoteType: OrderQuoteType!
+  expiresAt: DateTime!
+  signature: String!
+  signatureType: Int!
+  slippageBps: Int!
+  strategy: OrderStrategy!
+  salt: BigIntString!
+  currency: Currency!
+  isFillOrKill: Boolean!
+  isPostOnly: Boolean
+  amountFilled: BigIntString!
+  status: OrderStatus!
+  rewardEarningRate: Int!
+  """
+  The account that signed (placed) this order.
+  """
+  signer: Account!
+  """
+  The market this order was placed on.
+  """
+  market: Market!
+  """
+  The outcome (YES/NO position) this order was placed against.
+  """
+  outcome: Outcome!
+}
+
+"""
+A paginated connection over a list of nodes.
+"""
+type OrderConnection {
+  edges: [OrderEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int
+}
+
+"""
+Status code on `CreateOrderMutationResponse`, indicating why an order
+creation request succeeded or failed.
+"""
+enum OrderCreateCode {
+  Ok
+  OperatorNotApprovedError
+  OrderInvalidError
+  MissingWalletError
+  MissingContractAddressError
+  MissingOrderError
+  MaxOrdersForMarketError
+  CollateralPerMarketExceededError
+  TokenPerMarketExceededError
+  OrderAlreadyExistsError
+  OrderExpiryError
+  InvalidPrecisionError
+  InvalidCredentialsError
+  MarketNotTradingError
+  MissingTokenIdError
+  WrongFeeBpsError
+  BelowMinOrderPriceError
+  InternalServerError
+  LimitOrderWithSlippageError
+  MakerSignerMismatchError
+  NonMatchingAmountsError
+  PriceOutOfRangeError
+}
+
+"""
+A single edge in a paginated connection, pairing a cursor with a node.
+"""
+type OrderEdge {
+  cursor: String!
+  node: Order!
+}
+
+type OrderEventLog {
+  event: OrderEventLogType!
+  timestamp: DateTime!
+  transactionHash: String
+  amountFilled: BigIntString
+  priceExecuted: BigIntString
+  """
+  The order associated with this event.
+
+  Returns `null` if the order cannot be found (e.g. it belongs to a
+  different wallet or has been purged).
+  """
+  order: Order
+  """
+  The market in which this event occurred.
+  """
+  market: Market!
+  outcome: Outcome
+}
+
+"""
+A paginated connection over a list of nodes.
+"""
+type OrderEventLogConnection {
+  edges: [OrderEventLogEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int
+}
+
+"""
+A single edge in a paginated connection, pairing a cursor with a node.
+"""
+type OrderEventLogEdge {
+  cursor: String!
+  node: OrderEventLog!
+}
+
+"""
+Input filter for the `ordersEventLog` query.
+"""
+input OrderEventLogFilterInput {
+  """
+  Restrict to specific event types.
+  """
+  eventTypes: [OrderEventLogType!]
+  """
+  Restrict to events in a specific market (numeric ID).
+  """
+  marketId: ID
+  """
+  Restrict to a specific quote type (BID or ASK).
+  """
+  quoteType: OrderQuoteType
+}
+
+"""
+Event type for an order log entry.
+
+Used to filter the `ordersEventLog` and `matchEventLog` queries by the
+kind of action that generated the log entry.
+"""
+enum OrderEventLogType {
+  CREATE
+  MATCH_SUCCESS
+  NO_MARKET_MATCH
+  REJECTED_POST_ONLY
+  CANCEL
+  INVALIDATE
+  EXPIRED
+  CONVERT
+  MERGE
+  SPLIT
+  REDEEM
+  REFUND
+}
+
+"""
+Filter input for order lists on `Account.orders` and `Market.orders`.
+"""
+input OrderFilterInput {
+  status: OrderStatus
+  outcomeId: ID
+  categorySlug: String
+  """
+  When set, return only orders whose IDs are in this list.
+  """
+  ids: [ID!]
+}
+
+"""
+Whether the order is a bid (buying YES/NO tokens with USDT) or an ask
+(selling YES/NO tokens for USDT).
+"""
+enum OrderQuoteType {
+  BID
+  ASK
+}
+
+"""
+Current lifecycle state of an order.
+"""
+enum OrderStatus {
+  OPEN
+  MATCHED
+  RETRACTED
+  CANCELLED
+  EXPIRED
+}
+
+"""
+Matching strategy for an order.
+"""
+enum OrderStrategy {
+  LIMIT
+  MARKET
+  FOK
+}
+
+type Outcome {
+  """
+  Numeric database ID serialised as a string.
+  """
+  id: ID!
+  """
+  Zero-based position index within the market's outcome list.
+  """
+  index: Int!
+  """
+  Human-readable outcome label (e.g. `"Yes"`, `"No"`, `"Draw"`).
+  """
+  name: String!
+  """
+  Optional image URL displayed alongside this outcome in the UI.
+  """
+  imageUrl: String
+  """
+  Resolution status. `null` for unresolved markets, `Won` for the single
+  winning outcome, `Lost` for all others after resolution.
+  """
+  status: OutcomeStatus
+  """
+  ERC-1155 token ID for this outcome's conditional token, as a decimal
+  string. Errors if the outcome has not yet been deployed on-chain.
+  """
+  onChainId: BigIntString!
+  """
+  ISO 8601 UTC timestamp of when this outcome was created.
+  """
+  createdAt: DateTime!
+  """
+  Implied probability for this outcome as a percentage (0–100), rounded
+  to two decimal places. Derived from `bidPriceInCurrency`; returns
+  `null` when no live book is available for this market.
+  """
+  chancePercentage: Float
+  """
+  Best bid price for this outcome in the display currency.
+
+  Underlying book prices are always quoted for the Yes side; the No
+  side is returned as `1 - bestBid` so clients see a price consistent
+  with how traders express No positions. Returns `null` when no live
+  book is available for this market.
+  """
+  bidPriceInCurrency: Float
+  """
+  Best ask price for this outcome in the display currency.
+
+  Underlying book prices are always quoted for the Yes side; the No
+  side is returned as `1 - bestAsk`. Returns `null` when no live book
+  is available for this market.
+  """
+  askPriceInCurrency: Float
+  """
+  Aggregate statistics for this outcome: total shares held and the USD
+  value of all positions.
+
+  `sharesCount` is summed across non-dust positions. `positionsValueUsd`
+  is approximated as `sharesCount × bestBid`; returns `0.0` when no live
+  book is available for this market.
+  """
+  statistics: OutcomeStatistics!
+  """
+  Paginated wallet positions for this outcome, ordered by share amount descending.
+  """
+  positions(pagination: ForwardPaginationInput): PositionConnection!
+}
+
+"""
+A paginated connection over a list of nodes.
+"""
+type OutcomeConnection {
+  edges: [OutcomeEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+"""
+A single edge in a paginated connection, pairing a cursor with a node.
+"""
+type OutcomeEdge {
+  cursor: String!
+  node: Outcome!
+}
+
+"""
+Filter input for the `Market.outcomes` connection.
+"""
+input OutcomeFilterInput {
+  """
+  Restrict to the outcome with this index (0-based position in the market).
+  """
+  outcomeIndex: Int
+}
+
+"""
+Aggregate statistics for a single outcome.
+"""
+type OutcomeStatistics {
+  """
+  Total conditional token shares across all positions for this outcome.
+  """
+  sharesCount: Float!
+  """
+  USD value of all positions for this outcome.
+  """
+  positionsValueUsd: Float!
+}
+
+"""
+Resolution status of a binary market outcome.
+
+`Won` means this outcome was chosen as the resolution; `Lost` means it
+was ruled against. `null` means the market has not yet been resolved.
+"""
+enum OutcomeStatus {
+  WON
+  LOST
+}
+
+"""
+Metadata about the current page in a paginated list.
+"""
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+
+type Position {
+  id: ID!
+  shares: BigIntString!
+  averageBuyPriceUsd: Float!
+  valueUsd: Float!
+  pnlUsd: Float!
+  openSellOrdersShareCount: BigIntString!
+  market: Market!
+  outcome: Outcome!
+  account: Account!
+}
+
+"""
+A paginated connection over a list of nodes.
+"""
+type PositionConnection {
+  edges: [PositionEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+"""
+A single edge in a paginated connection, pairing a cursor with a node.
+"""
+type PositionEdge {
+  cursor: String!
+  node: Position!
+}
+
+"""
+Filter input for the `Account.positions` connection.
+"""
+input PositionFilterInput {
+  marketId: ID
+  categoryId: String
+  isResolved: Boolean
+}
+
+"""
+Sort order for the `positions` connection.
+"""
+enum PositionSort {
+  AMOUNT_DESC
+  SHARES_VALUE_DESC
+  RETURN_DESC
+  MARKET_QUESTION_ASC
+  MARKET_QUESTION_DESC
+}
+
+"""
+Payload for posting a new comment or reply on a category.
+"""
+input PostCommentInput {
+  categoryId: ID!
+  """
+  Comment body. Must be 1–5 000 chars.
+  """
+  content: String!
+  parentCommentId: ID
+  replyToCommentId: ID
+}
+
+"""
+Price-feed provider for crypto market price data.
+"""
+enum PriceFeedProvider {
+  PYTH
+  BINANCE
+  CHAINLINK
+}
+
+"""
+Credentials for Privy-delegated login. The server-side Privy token is
+extracted from the `x-privy-token` and `x-privy-identity-token` headers;
+the client only needs to provide the address being logged in.
+"""
+input PrivyAccountLoginInput {
+  address: Address!
+}
+
+type Query {
+  """
+  Platform-wide aggregate statistics. Returns a single object
+  containing all headline metrics for the platform.
+  """
+  statistics: Statistics!
+  """
+  Per-account yield earnings from the protocol's fee-share programme.
+
+  Requires authentication — scoped to the requesting wallet's earnings.
+  """
+  yield: Yield!
+  """
+  Per-account referral fee-share earnings.
+
+  Requires authentication — scoped to the requesting wallet's earnings.
+  """
+  referralFeeShare: ReferralFeeShare!
+  """
+  Fetch a single category by its slug (the value used as `id` in list edges).
+  Returns `null` if no visible, non-deleted category with that slug exists.
+  """
+  category(id: ID!): Category
+  """
+  Paginated list of all visible, non-draft categories. Defaults to the
+  `MOST_POPULAR` sort, which surfaces categories with active
+  fee-multiplier markets first, then falls back to a curated priority.
+
+  The connection's `totalCount` reflects the full count matching the
+  filter, regardless of the requested page size.
+  """
+  categories(
+    filter: CategoryFilterInput
+    sort: CategorySortInput
+    pagination: ForwardPaginationInput
+  ): CategoryConnection!
+  """
+  Paginated list of categories currently shown in the homepage featured carousel,
+  ordered by `featured_order` ascending. Only categories with a non-null
+  `featured_order` are included.
+  """
+  featuredCategories(pagination: ForwardPaginationInput): CategoryConnection!
+  """
+  Given a `market_schedule_config.slug`, returns the slug of the most recently
+  generated category that was produced by that schedule config. Used by the
+  frontend to redirect users from a standing schedule URL (e.g. "weekly-crypto")
+  to the current live instance of that recurring category.
+
+  Returns `null` if no matching schedule config or generated category exists.
+  """
+  latestCategorySlug(slug: String!): String
+  """
+  Paginated list of previous iterations of a recurring category, identified by
+  its slug. Returns resolved categories whose slug shares the same base prefix
+  (everything before the last `-`) as `category_id`, excluding the category
+  itself, ordered by creation date descending.
+
+  Returns an empty connection if the slug has no `-` separator.
+  """
+  previousCategories(categoryId: ID!, pagination: ForwardPaginationInput): CategoryConnection!
+  """
+  Top-level timeseries query. Returns per-market timeseries for a category
+  identified by its slug over the requested interval. Delegates to the same
+  helper as `Category.timeseries`.
+  """
+  timeseries(
+    categoryId: ID!
+    filter: TimeseriesFilterInput!
+    pagination: ForwardPaginationInput
+  ): TimeseriesConnection!
+  """
+  Fetch a single market by its numeric database ID. Returns `null` if no
+  non-deleted market with that ID exists.
+  """
+  market(id: ID!): Market
+  """
+  Paginated list of markets across all categories. Supports filtering by
+  category, resolution status, tag, and market variant. The total count is
+  not included in the connection (use `categories` with the `markets`
+  sub-resolver if you need per-category counts).
+  """
+  markets(
+    filter: MarketFilterInput
+    sort: MarketSortInput
+    pagination: ForwardPaginationInput
+  ): MarketConnection!
+  """
+  TradingView-style OHLC (Open/High/Low/Close) price feed for a given
+  price feed ID and resolution.
+
+  - `resolution`: bar size (`1s`, `1m`, `5m`, `1H`, `4H`, `1D`)
+  - `toTimestamp`: Unix seconds of the rightmost bar (defaults to now)
+  - `countback`: number of bars to return (max 1000)
+  - `provider`: price feed provider (`PYTH` or `CHAINLINK`; defaults to `PYTH`)
+
+  Returns an empty series for unknown feed IDs.
+  """
+  assetOhlc(
+    priceFeedId: ID!
+    resolution: OhlcResolution!
+    toTimestamp: Int
+    countback: Int!
+    provider: PriceFeedProvider
+  ): OhlcSeries!
+  """
+  Get tweet context for an X account by username.
+
+  Returns the account profile, date-windowed tweet count, timeseries
+  breakdown, and linked categories. Returns `null` for unknown usernames.
+
+  `timezone` is an IANA timezone name used to bucket timeseries points;
+  defaults to `"UTC"` when omitted.
+  """
+  tweetContextByUsername(
+    username: String!
+    categoryId: ID
+    granularity: TweetCountGranularity!
+    timezone: String
+    startsAt: Timestamp!
+    endsAt: Timestamp!
+  ): TweetContextWithCategories
+  """
+  Paginated list of all tags that have been assigned to at least one
+  category, ordered by tag ID ascending. Used to populate tag-filter UI
+  components.
+
+  Tags are a small, stable set in practice (typically < 50), so the
+  full list can usually be fetched in a single request without
+  pagination.
+
+  When `include_hidden` is `true`, tags hidden from the public list
+  are also returned.
+  """
+  categoryTags(pagination: ForwardPaginationInput, includeHidden: Boolean): CategoryTagConnection!
+  """
+  Fetches a single tag by its numeric database ID. Returns `null` if not found.
+  """
+  categoryTag(id: ID!): CategoryTag
+  """
+  Paginated global points leaderboard, ordered by total points
+  descending (rank ascending). Pagination is stable as long as the
+  underlying rank snapshot is not refreshed between page fetches.
+  """
+  leaderboard(pagination: ForwardPaginationInput): LeaderboardConnection!
+  """
+  Fetch a specific allocation round by its numeric ID. Returns `null` if no
+  round with that ID exists.
+  """
+  allocationRound(id: Int!): AllocationRound
+  """
+  Returns the allocation round that is currently in progress — i.e.
+  the one whose `[startTime, endTime]` window contains the current
+  time.
+
+  Returns `null` if no round is currently active (e.g. between rounds
+  or before the first round has been created).
+  """
+  currentAllocationRound: AllocationRound
+  """
+  All allocation rounds whose `startTime` is in the past, newest first.
+  """
+  allocationRounds: [AllocationRound!]!
+  """
+  Full-text search across categories and markets.
+
+  Results are ranked by TF-IDF relevance with fuzzy matching when the
+  search service is reachable, with a substring-match fallback otherwise.
+
+  Both `categories` and `markets` in the result respect the `pagination`
+  argument independently, so a single request can retrieve up to `first`
+  categories and `first` markets.
+  """
+  search(query: String!, filter: SearchFilterInput, pagination: ForwardPaginationInput): SearchResult!
+  """
+  Returns the categories and markets with the highest trending score.
+
+  The score combines 24 h volume momentum, trade count, holder growth,
+  and recency, with a fallback to raw 24 h volume when the search
+  service is unavailable.
+  """
+  trending(pagination: ForwardPaginationInput): TrendingResult!
+  """
+  Paginated feed of on-chain trade fill events, ordered by time descending
+  (most recent first).
+
+  Use `filter.minValueUsdtWei` to exclude dust fills and `filter.marketId`
+  to scope the feed to a single market.
+  """
+  matchEventLog(
+    filter: MatchEventLogFilterInput
+    pagination: ForwardPaginationInput
+  ): MatchEventLogConnection!
+  """
+  Returns the canonical EIP-191 login message for the given Unix millisecond
+  timestamp. Clients must sign this exact string and pass it unchanged to
+  `login(data: { message: …, signature: … })`.
+
+  The timestamp must be within 600 seconds of the server clock at login time.
+  Generating the message and submitting the signature should happen in a
+  single user interaction.
+  """
+  message(timestamp: Timestamp!): String!
+  """
+  Fetch the public profile for an Ethereum address.
+
+  The lookup is case-sensitive on the checksummed form; returns `null`
+  if no account with that address exists.
+  """
+  account(address: Address!): Account
+  """
+  Fetch the public profile by numeric wallet ID.
+
+  Returns `null` if no account with that wallet ID exists.
+  """
+  walletAccount(walletId: Int!): Account
+  """
+  Public paginated positions for a wallet, identified by address or wallet ID.
+  """
+  walletPositions(
+    filter: WalletPositionFilter!
+    pagination: ForwardPaginationInput
+  ): WalletPositionConnection!
+  """
+  Authenticated paginated positions for the currently logged-in wallet.
+  """
+  positions(pagination: ForwardPaginationInput): WalletPositionConnection!
+  """
+  Validate whether a candidate display name is available and meets the
+  platform's naming rules (3–16 chars, alphanumeric + `_` and `-`).
+
+  Returns `false` for names that are syntactically invalid or already
+  taken by another account, `true` if the name can be claimed.
+  """
+  accountNameValid(name: String!): Boolean!
+  """
+  Check whether a referral code is currently registered to an existing
+  account. A 5-character code that returns `true` here can be passed to
+  `addReferrer`.
+  """
+  referralCodeExists(referralCode: String!): Boolean!
+  """
+  Check whether the given address has a pending or unclaimed GTM
+  (Go-To-Market) reward.
+
+  Returns `false` for unknown addresses or addresses with no GTM record.
+  """
+  hasGtmPoints(address: Address!): Boolean!
+  """
+  Check whether the given address belongs to an API-tier user.
+
+  API users are granted elevated rate limits. Returns `false` for unknown
+  addresses or addresses that have not been promoted to API access.
+  """
+  isApiUser(address: Address!): Boolean!
+  """
+  Paginated PnL timeseries for a wallet over the given interval.
+
+  Returns historical data points appended with the current live PnL,
+  or an empty connection if the wallet has no timeseries data.
+  """
+  accountPnlTimeseries(
+    walletId: Int!
+    interval: TimeseriesInterval!
+    pagination: ForwardPaginationInput
+  ): TimeseriesPointConnection!
+  """
+  Fetch the current status of a background image-validation job.
+
+  Requires authentication — only the account that uploaded the image
+  may query its validation status. The `validationJobId` is the opaque
+  string returned by `uploadProfilePicture`.
+
+  Returns `null` if no job with that ID exists.
+  """
+  imageValidationStatus(validationJobId: String!): ImageValidationStatus
+  """
+  Fetch a single order by its numeric ID.
+
+  Only the authenticated owner of the order may retrieve it. Returns
+  `null` if no order with that ID exists or if the caller does not own it.
+  """
+  order(id: ID!): Order
+  """
+  Authenticated paginated list of orders for the logged-in wallet.
+  """
+  orders(filter: OrderFilterInput, pagination: ForwardPaginationInput): OrderConnection!
+  """
+  Authenticated paginated order event log (fills, cancels) for the logged-in wallet.
+  """
+  ordersEventLog(
+    filter: OrderEventLogFilterInput
+    pagination: ForwardPaginationInput
+  ): OrderEventLogConnection!
+  """
+  Fetch a single comment by its opaque ID.
+
+  Returns `null` if no comment with that ID exists.
+  """
+  comment(id: ID!): Comment
+  """
+  Paginated list of top-level comments for a category.
+
+  Comments are ordered by `createdAt` descending by default. Pass
+  `sortBy: MOST_LIKED` to surface the most-liked comments first.
+  The `onlyHolders` flag restricts results to commenters who hold a
+  position in any market belonging to the category.
+  """
+  comments(
+    categoryId: ID!
+    pagination: ForwardPaginationInput
+    sortBy: CommentSortBy
+    onlyHolders: Boolean
+  ): CommentConnection!
+  """
+  Fetch a platform badge definition by its numeric ID.
+
+  Returns `null` if no badge with that ID exists.
+  """
+  badge(id: ID!): Badge
+  """
+  Paginated list of platform badge definitions.
+
+  Pass `filter.isActive: true` to exclude retired badges.
+  """
+  badges(filter: BadgeFilterInput, pagination: ForwardPaginationInput): BadgeConnection!
+  """
+  Fetch the public-facing details of a registered OAuth client application.
+
+  Used to display third-party application information on the OAuth consent
+  screen before the user authorises access.
+  """
+  oauthClientDetails(clientId: ID!, redirectUri: String!): OAuthClientDetails!
+}
+
+"""
+Per-account referral fee-share data.
+
+Requires authentication. The protocol distributes a share of trading fees
+to accounts that referred active traders.
+"""
+type ReferralFeeShare {
+  nextDistribution: ReferralFeeShareNextDistribution
+  totalClaimedUsd: Float!
+  claimDetails: ReferralFeeShareClaimDetails
+  """
+  Paginated history of past referral-fee-share claims, newest first.
+  """
+  history(pagination: ForwardPaginationInput): ReferralFeeShareClaimConnection!
+}
+
+"""
+A historical referral-fee-share claim record.
+"""
+type ReferralFeeShareClaim {
+  amountUsd: Float!
+  claimedAt: DateTime!
+  transactionHash: String!
+}
+
+"""
+Paginated connection of referral-fee-share claim history.
+"""
+type ReferralFeeShareClaimConnection {
+  edges: [ReferralFeeShareClaimEdge!]!
+  pageInfo: PageInfo!
+}
+
+"""
+Merkle-proof based referral-fee-share claim details.
+"""
+type ReferralFeeShareClaimDetails {
+  cumulativeAmountWei: BigIntString!
+  amountUsd: Float!
+  proof: [String!]!
+}
+
+"""
+Edge wrapper for `ReferralFeeShareClaim`.
+"""
+type ReferralFeeShareClaimEdge {
+  cursor: String!
+  node: ReferralFeeShareClaim!
+}
+
+"""
+Details of the next referral-fee-share distribution period.
+"""
+type ReferralFeeShareNextDistribution {
+  periodId: Int!
+  currencyId: Int!
+  startTime: DateTime!
+  endTime: DateTime!
+}
+
+"""
+Referral programme statistics for an account.
+"""
+type ReferralStatistics {
+  referralCount: Int!
+  pendingReferralCount: Int!
+  feesEarnedUsd: Float!
+  feesEarnedUsd24h: Float!
+  feesEarnedUsd7d: Float!
+  feesEarnedUsd30d: Float!
+  referredOrdersCount: Int!
+  """
+  The referred account with the highest trading volume, if any.
+  """
+  topReferralByVolume: Account
+}
+
+input ReportCommentInput {
+  commentId: ID!
+  reason: String
+}
+
+"""
+Controls how reserved balance is accounted for when validating an order.
+"""
+enum ReservedBalancePolicy {
+  REJECT_MARKET_ORDER
+  SKIP_RESERVED_BALANCE_CHECKS
+}
+
+"""
+Oracle service that resolves a category's markets on-chain.
+
+- `PREDICT_DOT_FUN`: predict.fun's in-house oracle.
+- `THREE_PO`: third-party oracle provider (3po).
+- `CHAINLINK`: Chainlink price feed oracle.
+"""
+enum ResolutionProvider {
+  PREDICT_DOT_FUN
+  THREE_PO
+  CHAINLINK
+}
+
+"""
+Input filter for the `search` query.
+"""
+input SearchFilterInput {
+  """
+  Restrict results to open (`OPEN`) or resolved (`RESOLVED`) categories only.
+  """
+  status: CategoryStatus
+  """
+  Restrict results to categories/markets tagged with any of these tag IDs.
+  """
+  tags: [ID!]
+}
+
+"""
+Combined result of a full-text search across both categories and markets.
+
+Both connections share the same `pagination` argument from the parent
+query, so the requested page size applies independently to each list.
+The connections do not include a `totalCount`.
+"""
+type SearchResult {
+  categories: CategoryConnection!
+  markets: MarketConnection!
+}
+
+"""
+Home/away team names, codes, and optional final score for a sports market category.
+"""
+type SportsMarketData {
+  homeName: String!
+  homeCode: String!
+  awayName: String!
+  awayCode: String!
+  finalScore: FinalScore
+}
+
+type SportsMatchCategory implements Category {
+  id: ID!
+  slug: String!
+  title: String!
+  titleTranslationKey: String
+  description: String
+  imageUrl: String!
+  mobileImageUrl: String!
+  videoUri: String
+  onChainId: BigIntString
+  status: CategoryStatus!
+  marketVariant: MarketVariant!
+  resolutionProvider: ResolutionProvider!
+  isNegRisk: Boolean!
+  isYieldBearing: Boolean!
+  decimalPrecision: Int!
+  conversionFeeBps: Int
+  featuredOrder: Int
+  overrideImageUrl: String
+  holdersCount: BigIntString!
+  startsAt: DateTime!
+  endsAt: DateTime
+  createdAt: DateTime!
+  isBookmarkedByUser: Boolean!
+  statistics: CategoryStatistics!
+  tags(pagination: ForwardPaginationInput): CategoryTagConnection!
+  markets(filter: CategoryMarketsFilterInput, pagination: ForwardPaginationInput): MarketConnection!
+  comments(
+    pagination: ForwardPaginationInput
+    sortBy: CommentSortBy
+    onlyHolders: Boolean
+  ): CommentConnection!
+  similarCategories(pagination: ForwardPaginationInput): CategoryConnection!
+  timeseries(filter: TimeseriesFilterInput!, pagination: ForwardPaginationInput): TimeseriesConnection!
+  marketData: SportsMarketData
+}
+
+type SportsTeamMatchCategory implements Category {
+  id: ID!
+  slug: String!
+  title: String!
+  titleTranslationKey: String
+  description: String
+  imageUrl: String!
+  mobileImageUrl: String!
+  videoUri: String
+  onChainId: BigIntString
+  status: CategoryStatus!
+  marketVariant: MarketVariant!
+  resolutionProvider: ResolutionProvider!
+  isNegRisk: Boolean!
+  isYieldBearing: Boolean!
+  decimalPrecision: Int!
+  conversionFeeBps: Int
+  featuredOrder: Int
+  overrideImageUrl: String
+  holdersCount: BigIntString!
+  startsAt: DateTime!
+  endsAt: DateTime
+  createdAt: DateTime!
+  isBookmarkedByUser: Boolean!
+  statistics: CategoryStatistics!
+  tags(pagination: ForwardPaginationInput): CategoryTagConnection!
+  markets(filter: CategoryMarketsFilterInput, pagination: ForwardPaginationInput): MarketConnection!
+  comments(
+    pagination: ForwardPaginationInput
+    sortBy: CommentSortBy
+    onlyHolders: Boolean
+  ): CommentConnection!
+  similarCategories(pagination: ForwardPaginationInput): CategoryConnection!
+  timeseries(filter: TimeseriesFilterInput!, pagination: ForwardPaginationInput): TimeseriesConnection!
+  marketData: SportsMarketData
+}
+
+"""
+Aggregated platform-wide statistics.
+
+These figures are updated periodically and may lag by up to a few
+minutes. All monetary values are in USD.
+
+`totalBetsToDateCount` counts all matched trade fill events, not the
+number of currently open positions.
+"""
+type Statistics {
+  """
+  Cumulative all-time trading volume across all markets, in USD.
+  """
+  totalVolumeUsd: Float!
+  """
+  Total USDT liquidity currently posted across all open markets, in USD.
+  """
+  totalLiquidityUsd: Float!
+  """
+  Number of distinct wallet addresses that have ever placed a trade.
+  """
+  totalAccountsCount: Int!
+  """
+  Total number of fill events (matched trades) recorded across all markets.
+  """
+  totalBetsToDateCount: Int!
+  """
+  Total points distributed through the GTM (Go-To-Market) rewards programme.
+  """
+  totalGtmPointsClaimed: Int!
+  """
+  Trading volume over the past 30 days, in USD.
+  """
+  volume30dUsd: Float!
+}
+
+type Timeseries {
+  """
+  The market this timeseries belongs to.
+  """
+  market: Market!
+  dataGranularity: TimeseriesGranularity!
+  """
+  All data points for this market over the requested interval.
+  """
+  data(pagination: ForwardPaginationInput): TimeseriesEntryConnection!
+}
+
+"""
+A paginated connection over a list of nodes.
+"""
+type TimeseriesConnection {
+  edges: [TimeseriesEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int
+}
+
+"""
+A single edge in a paginated connection, pairing a cursor with a node.
+"""
+type TimeseriesEdge {
+  cursor: String!
+  node: Timeseries!
+}
+
+"""
+A single `{x, y}` timeseries data point.
+
+`x` is a Unix epoch integer (seconds) and `y` is the implied probability.
+"""
+type TimeseriesEntry {
+  x: Int!
+  y: Float!
+}
+
+"""
+A paginated connection over a list of nodes.
+"""
+type TimeseriesEntryConnection {
+  edges: [TimeseriesEntryEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int
+}
+
+"""
+A single edge in a paginated connection, pairing a cursor with a node.
+"""
+type TimeseriesEntryEdge {
+  cursor: String!
+  node: TimeseriesEntry!
+}
+
+"""
+Input filter for the `timeseries` field on categories.
+"""
+input TimeseriesFilterInput {
+  """
+  Time window to include data from.
+  """
+  interval: TimeseriesInterval!
+}
+
+"""
+Granularity of timeseries data points.
+"""
+enum TimeseriesGranularity {
+  _5m
+  _1H
+  _1D
+  _7D
+  _30D
+}
+
+"""
+Interval options for the `accountPnlTimeseries` query.
+"""
+enum TimeseriesInterval {
+  """
+  Last 24 hours of data.
+  """
+  _1D
+  """
+  Last 7 days of data.
+  """
+  _7D
+  """
+  Last 30 days of data.
+  """
+  _30D
+  """
+  All available history (up to ~6 months).
+  """
+  MAX
+}
+
+"""
+A single point in an account PnL timeseries.
+"""
+type TimeseriesPoint {
+  """
+  Unix timestamp (seconds since epoch).
+  """
+  x: Int!
+  """
+  PnL value in USD at this timestamp.
+  """
+  y: Float!
+}
+
+"""
+A paginated connection over a list of nodes.
+"""
+type TimeseriesPointConnection {
+  edges: [TimeseriesPointEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int
+}
+
+"""
+A single edge in a paginated connection, pairing a cursor with a node.
+"""
+type TimeseriesPointEdge {
+  cursor: String!
+  node: TimeseriesPoint!
+}
+
+scalar Timestamp
+
+"""
+Combined result of the trending query, returning the most actively traded
+categories and markets over the recent window.
+
+Trending rank is determined by 24 h trading volume. Both connections
+share the same `pagination` argument.
+"""
+type TrendingResult {
+  categories: CategoryConnection!
+  markets: MarketConnection!
+}
+
+type TweetContextWithCategories {
+  currentTweetCount: Int!
+  """
+  The X account profile associated with this username.
+  """
+  xAccount: XAccount
+  """
+  Time-series of tweet count data points bucketed by the requested granularity.
+  """
+  timeseries: [TweetCountDataPoint!]!
+  """
+  Categories linked to this X account, filtered by visibility unless a
+  specific `categoryId` was requested.
+  """
+  categories: [TweetCountCategorySummary!]!
+  """
+  Start of the date window passed to `tweetContextByUsername`, as an ISO
+  8601 UTC string. `null` when no start bound was supplied.
+  """
+  startsAt: String
+  """
+  End of the date window passed to `tweetContextByUsername`, as an ISO
+  8601 UTC string. `null` when no end bound was supplied.
+  """
+  endsAt: String
+  """
+  Paginated X posts for this account within the date window supplied to
+  `tweetContextByUsername`. Ordered newest-first. Cursor is the post ID.
+
+  `typeIds` restricts results to posts with matching `type_id` values;
+  omit to return all types.
+  """
+  xPosts(pagination: ForwardPaginationInput, typeIds: [Int!]): XPostConnection!
+}
+
+type TweetCountCategory implements Category {
+  id: ID!
+  slug: String!
+  title: String!
+  titleTranslationKey: String
+  description: String
+  imageUrl: String!
+  mobileImageUrl: String!
+  videoUri: String
+  onChainId: BigIntString
+  status: CategoryStatus!
+  marketVariant: MarketVariant!
+  resolutionProvider: ResolutionProvider!
+  isNegRisk: Boolean!
+  isYieldBearing: Boolean!
+  decimalPrecision: Int!
+  conversionFeeBps: Int
+  featuredOrder: Int
+  overrideImageUrl: String
+  holdersCount: BigIntString!
+  startsAt: DateTime!
+  endsAt: DateTime
+  createdAt: DateTime!
+  isBookmarkedByUser: Boolean!
+  statistics: CategoryStatistics!
+  tags(pagination: ForwardPaginationInput): CategoryTagConnection!
+  markets(filter: CategoryMarketsFilterInput, pagination: ForwardPaginationInput): MarketConnection!
+  comments(
+    pagination: ForwardPaginationInput
+    sortBy: CommentSortBy
+    onlyHolders: Boolean
+  ): CommentConnection!
+  similarCategories(pagination: ForwardPaginationInput): CategoryConnection!
+  timeseries(filter: TimeseriesFilterInput!, pagination: ForwardPaginationInput): TimeseriesConnection!
+  marketData: [TweetCountMarketData!]!
+}
+
+"""
+Brief category summary returned inside tweet context responses.
+"""
+type TweetCountCategorySummary {
+  id: ID!
+  slug: String!
+  title: String!
+  imageUrl: String!
+  startsAt: DateTime!
+  endsAt: DateTime
+  status: CategoryStatus!
+}
+
+"""
+One time-bucket in a tweet count timeseries.
+"""
+type TweetCountDataPoint {
+  timestamp: DateTime!
+  count: Int!
+}
+
+"""
+Granularity for the tweet count timeseries.
+"""
+enum TweetCountGranularity {
+  """
+  One bucket per hour.
+  """
+  HOURLY
+  """
+  One bucket per day.
+  """
+  DAILY
+}
+
+"""
+Per-market tweet-count threshold data for a `TweetCountCategory`.
+"""
+type TweetCountMarketData {
+  marketId: ID!
+  minCount: Int!
+  """
+  `null` means unlimited (no upper bound).
+  """
+  maxCount: Int
+  xAccountUsername: String!
+}
+
+"""
+Category to remove from the authenticated account's bookmarks.
+"""
+input UnbookmarkCategoryInput {
+  categorySlug: ID!
+}
+
+input UnlikeCommentInput {
+  commentId: ID!
+}
+
+"""
+Fields the authenticated account holder may update on their public profile.
+All fields are optional — only non-`null` values are written.
+"""
+input UpdateAccountInput {
+  """
+  Display name. Must be unique, ≥ 1 char, ≤ 30 chars, no special characters.
+  """
+  name: String
+  """
+  Short bio, ≤ 250 chars.
+  """
+  description: String
+  """
+  Profile picture URL. Only `https://pbs.twimg.com/` origins are accepted.
+  Pass `null` explicitly to clear the current profile picture.
+  """
+  imageUrl: String
+  """
+  Whether the profile picture should be publicly visible. Setting this to
+  `false` hides the image without deleting it.
+  """
+  imageVisible: Boolean
+  """
+  Set to `true` to mark the onboarding flow as completed. Cannot be set to
+  `false` once `true`. Requires a `name` to be set (either in this payload
+  or already on the account).
+  """
+  hasOnboarded: Boolean
+}
+
+"""
+Returned by `updateAccount`. The `account` field contains the updated
+account object, or `null` if the update failed.
+"""
+type UpdateAccountMutationResponse {
+  account: Account
+}
+
+"""
+A multipart file upload
+"""
+scalar Upload
+
+"""
+Returned by `uploadProfilePicture`. Poll `imageValidationStatus(validationJobId: …)`
+until the background validation job completes before treating the image
+as publicly visible.
+"""
+type UploadProfilePictureMutationResponse {
+  validationJobId: String!
+}
+
+"""
+Returned by `validateDeposit`. Indicates whether the provided address has a
+confirmed on-chain USDT deposit in the protocol's collateral vault.
+"""
+type ValidateDepositResponse {
+  success: Boolean!
+  """
+  On-chain balance in the collateral asset's native units (USDT 1e6),
+  serialised as a decimal string to avoid JavaScript precision loss.
+  """
+  balanceWei: BigIntString!
+}
+
+"""
+Returned by `validateJwt`. `success` is `true` when the Bearer token is
+valid and has not expired.
+"""
+type ValidateJwt {
+  success: Boolean!
+}
+
+"""
+Lifecycle state of a background image-validation job.
+
+Clients should poll `imageValidationStatus` until the status is `COMPLETED`
+or `FAILED` before surfacing the new image to other users.
+"""
+enum ValidationJobStatus {
+  PENDING
+  STARTED
+  COMPLETED
+  FAILED
+}
+
+scalar Void
+
+"""
+A position record returned by the `walletPositions` and root `positions`
+queries.
+
+The `id` is a synthetic `<walletId>-<rawId>` string; it is opaque and
+should be treated as such by clients.
+"""
+type WalletPosition {
+  id: ID!
+  """
+  Stable per-position identifier (used as the cursor key).
+  """
+  rawId: Int!
+  """
+  Wallet that holds this position.
+  """
+  walletId: Int!
+  """
+  Market this position is in.
+  """
+  marketId: Int!
+  """
+  Amount of outcome tokens held, as a decimal string to preserve precision.
+  """
+  amount: BigIntString!
+}
+
+"""
+A paginated connection over a list of nodes.
+"""
+type WalletPositionConnection {
+  edges: [WalletPositionEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int
+}
+
+"""
+A single edge in a paginated connection, pairing a cursor with a node.
+"""
+type WalletPositionEdge {
+  cursor: String!
+  node: WalletPosition!
+}
+
+"""
+Filter input for the `walletPositions` and `positions` queries.
+"""
+input WalletPositionFilter {
+  """
+  Wallet address to fetch positions for.
+  """
+  walletAddress: Address
+  """
+  Wallet ID to fetch positions for.
+  """
+  walletId: Int
+}
+
+"""
+Weekly points breakdown entry for `Account.weeklyPointsHistory`.
+
+`calculated` is `false` when the points pipeline has not yet completed
+the calculation for this week (i.e. points are "TBD").
+"""
+type WeeklyPointsBreakdown {
+  """
+  1-based ISO week number.
+  """
+  week: Int!
+  """
+  Total points earned this week.
+  """
+  totalPoints: Float!
+  """
+  Subset of total points earned via referrals.
+  """
+  referralPoints: Float!
+  """
+  Whether the weekly calculation has been finalised.
+  """
+  calculated: Boolean!
+}
+
+"""
+X account profile for a tracked Twitter/X user.
+"""
+type XAccount {
+  id: ID!
+  username: String!
+  profileImageUrl: String
+}
+
+type XPost {
+  id: ID!
+  typeId: Int!
+  createdAt: DateTime!
+  content: String
+}
+
+"""
+A paginated connection over a list of nodes.
+"""
+type XPostConnection {
+  edges: [XPostEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+"""
+A single edge in a paginated connection, pairing a cursor with a node.
+"""
+type XPostEdge {
+  cursor: String!
+  node: XPost!
+}
+
+"""
+Per-account yield data from the protocol's fee-share yield programme.
+
+Requires authentication. Use `claimDetails` to obtain the Merkle proof
+required to submit an on-chain claim transaction.
+"""
+type Yield {
+  """
+  Timestamp of the next scheduled yield distribution, if known.
+  """
+  nextDistribution: DateTime
+  """
+  Cumulative USD value claimed by this wallet to date.
+  """
+  totalClaimedUsd: Float!
+  """
+  Current unclaimed balance in USD.
+  """
+  totalBalanceYieldUsd: Float!
+  """
+  Merkle proof details for the current claimable amount.
+  """
+  claimDetails: YieldClaimDetails
+  """
+  Paginated history of past yield claims, newest first.
+  """
+  history(pagination: ForwardPaginationInput): YieldClaimConnection!
+}
+
+"""
+A historical yield-claim record.
+"""
+type YieldClaim {
+  """
+  USD value at the time of the claim.
+  """
+  amountUsd: Float!
+  """
+  Timestamp when the on-chain transaction confirmed.
+  """
+  claimedAt: DateTime!
+  """
+  On-chain transaction hash of the claim.
+  """
+  transactionHash: String!
+}
+
+"""
+Paginated connection of yield-claim history entries.
+"""
+type YieldClaimConnection {
+  edges: [YieldClaimEdge!]!
+  pageInfo: PageInfo!
+}
+
+"""
+Merkle-proof based yield claim details required to submit an on-chain claim.
+"""
+type YieldClaimDetails {
+  """
+  Cumulative claimable amount in Wei (1e18), decimal string.
+  """
+  cumulativeAmountWei: BigIntString!
+  """
+  USD value of the claimable amount.
+  """
+  amountUsd: Float!
+  """
+  Merkle proof siblings needed to verify the claim on-chain.
+  """
+  proof: [String!]!
+}
+
+"""
+Edge wrapper for `YieldClaim` in a paginated connection.
+"""
+type YieldClaimEdge {
+  cursor: String!
+  node: YieldClaim!
+}
+
+"""
+Indicates that an Input Object is a OneOf Input Object (and thus requires exactly one of its field be provided)
+"""
+directive @oneOf on INPUT_OBJECT
+

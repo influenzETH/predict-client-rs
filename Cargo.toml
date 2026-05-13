@@ -1,0 +1,40 @@
+[package]
+name = "predict-client-rs"
+version = "0.0.0"
+edition = "2021"
+license = "MIT"
+
+[lib]
+name = "predict_client"
+
+[dependencies]
+anyhow = { version = "*", features = ["backtrace"] }
+serde = { version = "*", features = ["rc"] }
+serde_json = { version = "*" }
+serde_with = { version = "*", features = ["chrono", "hex", "json"] }
+serde_repr = "*"
+rust_decimal = { version = "*", features = ["serde-with-arbitrary-precision", "serde-with-str"] }
+rust_decimal_macros = "*"
+alloy = { version = "*", features = ["std", "contract", "eip712", "json", "signers", "signer-local", "serde", "reqwest-rustls-tls"], default-features = false }
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "json", "cookies"] }
+tokio = { version = "*", features = ["rt-multi-thread", "macros", "sync", "signal", "fs", "io-util"] }
+async-trait = "*"
+tracing = "*"
+chrono = "*"
+const-hex = "*"
+url = "*"
+arc-swap = "*"
+nohash-hasher = "*"
+rand = "*"
+cynic = { version = "3.13", features = ["http-reqwest"] }
+progenitor-client = "0.14"
+bytes = "1"
+futures = "0.3"
+
+[build-dependencies]
+progenitor = "0.14"
+prettyplease = "0.2"
+syn = "2"
+serde_json = "1"
+openapiv3 = "2"
+schemars = "0.8"
