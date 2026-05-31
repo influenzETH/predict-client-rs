@@ -35,6 +35,11 @@ mod cynic_enums {
         CryptoUpDown,
         TweetCount,
         SportsTeamMatch,
+        SportsNba,
+        SportsFifaWorldCup,
+        SportsExactScore,
+        SportsHalftimeResult,
+        SportsProps,
     }
 
     /// `OutcomeStatus` — resolution status (`null` while unresolved).
@@ -42,6 +47,7 @@ mod cynic_enums {
     pub enum OutcomeStatus {
         Won,
         Lost,
+        Draw,
     }
 
     /// `MarketSortInput` — sort modes for the top-level `markets` query.

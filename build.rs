@@ -91,6 +91,44 @@ fn patch_spec(spec: &mut Value) {
         vd.remove("discriminator");
     }
 
+    // 3b. `OutcomeVariantData` (introduced upstream alongside the new
+    // SPORTS_NBA / SPORTS_FIFA_WORLD_CUP variants) has the same forward-compat
+    // problem as `VariantData`, *plus* an upstream-spec bug: its `oneOf`
+    // lists the same `$ref` (`OutcomeVariantData_SportsTeamOutcomeData`)
+    // twice — once notionally for SPORTS_NBA and once for
+    // SPORTS_FIFA_WORLD_CUP. progenitor faithfully emits two enum variants
+    // backed by the *same* underlying type, which generates duplicate
+    // `serde::Deserialize` / `Serialize` / `Clone` / `Debug` impls and a
+    // re-defined `OutcomeVariantData` name (23 errors).
+    //
+    // Dedupe the `oneOf` by serialized branch identity, then apply the same
+    // `{} + drop discriminator` treatment as `VariantData` so unknown sport
+    // types deserialize into `serde_json::Value` instead of crashing.
+    if let Some(ovd) = spec.pointer_mut("/components/schemas/OutcomeVariantData").and_then(|v| v.as_object_mut()) {
+        if let Some(one_of) = ovd.get_mut("oneOf").and_then(|v| v.as_array_mut()) {
+            let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
+            one_of.retain(|branch| seen.insert(branch.to_string()));
+            one_of.push(Value::Object(serde_json::Map::new()));
+        }
+        ovd.remove("discriminator");
+    }
+
+    // 3c. Collapse `Outcome.variantData` from `allOf [{$ref}, {description}]`
+    // to a bare `$ref`. The upstream wrapper synthesizes a *new* inline schema
+    // that progenitor names `OutcomeVariantData` — colliding with the existing
+    // top-level `OutcomeVariantData` type and producing two enum declarations
+    // with conflicting trait impls. The redundant description is preserved
+    // alongside the `$ref`; OpenAPI 3.0 tolerates the sibling for documentation
+    // purposes and progenitor ignores it.
+    if let Some(ovd_prop) = spec.pointer_mut("/components/schemas/Outcome/properties/variantData").and_then(|v| v.as_object_mut()) {
+        let description = ovd_prop.get("description").cloned();
+        ovd_prop.clear();
+        ovd_prop.insert("$ref".into(), Value::String("#/components/schemas/OutcomeVariantData".into()));
+        if let Some(d) = description {
+            ovd_prop.insert("description".into(), d);
+        }
+    }
+
     // 4. Tag ID-shaped inline schemas with custom `format` strings so typify's
     //    `SchemaCache` (see `with_conversion` in `main`) substitutes our domain
     //    newtypes wholesale.

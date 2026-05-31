@@ -34,6 +34,10 @@
       "description": "Category and tag endpoints"
     },
     {
+      "name": "Leaderboard",
+      "description": "Global points leaderboard"
+    },
+    {
       "name": "Markets",
       "description": "Market data endpoints"
     },
@@ -591,12 +595,141 @@
           "Orders"
         ],
         "summary": "Remove orders",
-        "description": "Remove orders from the orderbook for the authenticated signer (max 100).\nThis will not cancel the order on-chain.\nRequires JWT or project authentication. Project auth requires an\nEIP-712 signature in the `x-signature` header.",
+        "description": "Remove orders from the orderbook for the authenticated signer (max 100).\nThis will not cancel the order on-chain.\nRequires JWT or project authentication.",
         "requestBody": {
           "content": {
             "application/json; charset=utf-8": {
               "schema": {
                 "$ref": "#/components/schemas/RemoveOrdersRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemoveOrdersResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request (400) - Invalid input or parameters",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized (401) - Missing or invalid authentication",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden (403) - Valid auth but insufficient permissions",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (404) - Resource doesn't exist",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Gone (410) - Resource has been permanently removed",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests (429) - Rate limit exceeded",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error (500) - Unexpected error",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad gateway (502) - Upstream API error",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable (503) - Upstream API unreachable",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/orders/remove-by-hash": {
+      "post": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Remove orders by hash",
+        "description": "Remove orders from the orderbook by their hash for the authenticated signer (max 100).\nThis will not cancel the order on-chain.\nRequires JWT or project authentication.",
+        "requestBody": {
+          "content": {
+            "application/json; charset=utf-8": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveOrdersByHashRequest"
               }
             }
           },
@@ -3828,6 +3961,125 @@
         ]
       }
     },
+    "/account/points/weekly": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Get weekly points breakdown",
+        "description": "Returns the authenticated user's per-week points history alongside\nthe total points distributed across all wallets each week. Entries\nare ordered chronologically from week 1.\n\nThe current in-progress round is included with `calculated: false`\nuntil it closes.\n\nRequires JWT authentication.",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeeklyPointsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request (400) - Invalid input or parameters",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized (401) - Missing or invalid authentication",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden (403) - Valid auth but insufficient permissions",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (404) - Resource doesn't exist",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Gone (410) - Resource has been permanently removed",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests (429) - Rate limit exceeded",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error (500) - Unexpected error",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad gateway (502) - Upstream API error",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable (503) - Upstream API unreachable",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
     "/account/referral": {
       "post": {
         "tags": [
@@ -4110,6 +4362,146 @@
           },
           {
             "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/leaderboard": {
+      "get": {
+        "tags": [
+          "Leaderboard"
+        ],
+        "summary": "Get the global points leaderboard",
+        "description": "Returns a cursor-paginated page of the global points leaderboard,\nordered by cumulative points descending (rank 1 first). Follow the\nreturned `cursor` via the `after` query parameter to fetch the next\npage.\n\nPagination is stable as long as the underlying rank snapshot is not\nrefreshed between page fetches.\n\nRequires an API key.",
+        "parameters": [
+          {
+            "name": "first",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "in": "query",
+            "required": false,
+            "deprecated": false,
+            "explode": true
+          },
+          {
+            "name": "after",
+            "schema": {
+              "type": "string",
+              "maxLength": 1024
+            },
+            "in": "query",
+            "required": false,
+            "deprecated": false,
+            "explode": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaderboardResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request (400) - Invalid input or parameters",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized (401) - Missing or invalid authentication",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden (403) - Valid auth but insufficient permissions",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (404) - Resource doesn't exist",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Gone (410) - Resource has been permanently removed",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests (429) - Rate limit exceeded",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error (500) - Unexpected error",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad gateway (502) - Upstream API error",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable (503) - Upstream API unreachable",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
           }
         ]
       }
@@ -5663,10 +6055,14 @@
           },
           "teams": {
             "type": "array",
-            "description": "Teams playing in this sports event, when applicable.",
+            "description": "Deprecated in favour of category-level `variantData`. Teams playing in this sports event,\nwhen applicable.",
             "items": {
               "$ref": "#/components/schemas/Team"
             }
+          },
+          "parentSlug": {
+            "type": "string",
+            "description": "The slug of the parent category, when this is a prop/child market."
           },
           "stats": {
             "$ref": "#/components/schemas/CategoryStatsData"
@@ -5847,7 +6243,7 @@
           "startPrice": {
             "type": "number",
             "format": "double",
-            "description": "Starting price; null before market start"
+            "description": "Starting price, null before market start"
           },
           "endPrice": {
             "type": "number",
@@ -5899,6 +6295,7 @@
           "create_order_expiry_too_far",
           "create_order_expiry_too_soon",
           "create_order_min_order_value_not_met",
+          "create_order_min_order_size_not_met",
           "create_order_limit_amounts_mismatch",
           "create_order_price_precision_too_high",
           "create_order_market_amounts_mismatch",
@@ -5978,7 +6375,7 @@
           "error": "internal_server_error",
           "message": "Internal server error",
           "success": false,
-          "timestamp": "2026-05-08T15:02:35.444788774Z",
+          "timestamp": "2026-05-29T06:57:20.187315888Z",
           "trace": null
         }
       },
@@ -6127,6 +6524,64 @@
           }
         }
       },
+      "LeaderboardEntry": {
+        "type": "object",
+        "title": "LeaderboardEntry",
+        "description": "A single entry on the global points leaderboard.\n\nThe `rank` is descending where rank 1 is equivalent to having\nthe highest cumulative points.",
+        "required": [
+          "rank",
+          "totalPoints",
+          "name",
+          "address"
+        ],
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "format": "int64",
+            "description": "first-to-last rank on the global leaderboard."
+          },
+          "totalPoints": {
+            "type": "number",
+            "format": "double",
+            "description": "Cumulative all-time points balance for this account."
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name of the account, empty string if unset."
+          },
+          "address": {
+            "type": "string",
+            "description": "The account's wallet address."
+          },
+          "imageUrl": {
+            "type": "string",
+            "description": "Profile image URL, only present when the account's image is public."
+          }
+        }
+      },
+      "LeaderboardResponse": {
+        "type": "object",
+        "title": "LeaderboardResponse",
+        "description": "Response for GET /v1/leaderboard",
+        "required": [
+          "success",
+          "data"
+        ],
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "cursor": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LeaderboardEntry"
+            }
+          }
+        }
+      },
       "Market": {
         "type": "object",
         "title": "Market",
@@ -6268,6 +6723,17 @@
               }
             ]
           },
+          "marketType": {
+            "description": "Classification of the individual market's prediction mechanic.\nNull for markets created before this field was introduced.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MarketType"
+              },
+              {
+                "description": "Classification of the individual market's prediction mechanic.\nNull for markets created before this field was introduced."
+              }
+            ]
+          },
           "rewards": {
             "$ref": "#/components/schemas/MarketRewards"
           }
@@ -6340,11 +6806,16 @@
         "description": "Market statistics data",
         "required": [
           "totalLiquidityUsd",
+          "liquidity3cAskUsd",
           "volumeTotalUsd",
           "volume24hUsd"
         ],
         "properties": {
           "totalLiquidityUsd": {
+            "type": "number",
+            "format": "double"
+          },
+          "liquidity3cAskUsd": {
             "type": "number",
             "format": "double"
           },
@@ -6377,7 +6848,7 @@
       },
       "MarketStatus": {
         "type": "string",
-        "description": "Market status (DB `market_status.id` values as repr).\n\n`Removed` is a synthetic status set when `market.is_deleted = TRUE`;\nit does not correspond to a `market_status` row.",
+        "description": "Market lifecycle state, from registration through resolution.\n\n`Removed` is a synthetic status reported for markets that have been\nwithdrawn, meaning it is not part of the normal lifecycle progression.",
         "enum": [
           "REGISTERED",
           "PRICE_PROPOSED",
@@ -6478,15 +6949,30 @@
           }
         }
       },
+      "MarketType": {
+        "type": "string",
+        "description": "Market type (DB `market.market_type_id` values as repr).\n\nClassifies what kind of prediction an individual market represents,\nindependent of the category it belongs to. Works alongside [`MarketVariant`]:\nthe variant describes how the category container renders; the market type\ndescribes the prediction mechanic of the individual market.",
+        "enum": [
+          "SPORTS_MONEYLINE",
+          "SPORTS_SPREADS",
+          "SPORTS_TOTALS",
+          "SPORTS_BOTH_TEAMS_TO_SCORE"
+        ]
+      },
       "MarketVariant": {
         "type": "string",
-        "description": "Market variant type (DB `category.market_variant_id` values as repr).",
+        "description": "Classifies the market template type.\n\nControls the UI layout and trading mechanics of a category. See also\n[`MarketType`] which classifies individual markets within a category.",
         "enum": [
           "DEFAULT",
           "SPORTS_MATCH",
           "CRYPTO_UP_DOWN",
           "TWEET_COUNT",
-          "SPORTS_TEAM_MATCH"
+          "SPORTS_TEAM_MATCH",
+          "SPORTS_NBA",
+          "SPORTS_FIFA_WORLD_CUP",
+          "SPORTS_EXACT_SCORE",
+          "SPORTS_HALFTIME_RESULT",
+          "SPORTS_PROPS"
         ]
       },
       "MarketWithStats": {
@@ -6627,6 +7113,17 @@
               },
               {
                 "description": "Set when this entire market is about a single team (SportsMatch team-win markets)."
+              }
+            ]
+          },
+          "marketType": {
+            "description": "Classification of the individual market's prediction mechanic.\nNull for markets created before this field was introduced.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MarketType"
+              },
+              {
+                "description": "Classification of the individual market's prediction mechanic.\nNull for markets created before this field was introduced."
               }
             ]
           },
@@ -7200,7 +7697,7 @@
       },
       "OrderStatusFilter": {
         "type": "string",
-        "description": "Order status filter for queries (repr values match `order_status.id`).",
+        "description": "Order status filter for queries.",
         "enum": [
           "OPEN",
           "FILLED"
@@ -7208,7 +7705,7 @@
       },
       "OrderStrategy": {
         "type": "string",
-        "description": "Order strategy (DB `order.strategy_id`: 1 = Market, 2 = Limit).",
+        "description": "Order execution strategy.",
         "enum": [
           "MARKET",
           "LIMIT"
@@ -7367,13 +7864,24 @@
             ]
           },
           "team": {
-            "description": "Set when this outcome represents a specific team (SportsTeamMatch).",
+            "description": "Deprecated in favour of outcome-level `variantData`. Set when this outcome represents\na specific team (SportsTeamMatch).",
             "allOf": [
               {
                 "$ref": "#/components/schemas/Team"
               },
               {
-                "description": "Set when this outcome represents a specific team (SportsTeamMatch)."
+                "description": "Deprecated in favour of outcome-level `variantData`. Set when this outcome represents\na specific team (SportsTeamMatch)."
+              }
+            ]
+          },
+          "variantData": {
+            "description": "Variant-specific metadata for this outcome.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OutcomeVariantData"
+              },
+              {
+                "description": "Variant-specific metadata for this outcome."
               }
             ]
           }
@@ -7381,7 +7889,7 @@
       },
       "OutcomeSide": {
         "type": "string",
-        "description": "Outcome side (Yes or No). DB stores as bool: true = Yes, false = No.",
+        "description": "Outcome side in a binary market: yes or no.",
         "enum": [
           "Yes",
           "No"
@@ -7389,7 +7897,7 @@
       },
       "OutcomeStatus": {
         "type": "string",
-        "description": "Outcome resolution status. DB stores as bool: true = Won, false = Lost.",
+        "description": "Resolution status of a market outcome.",
         "enum": [
           "WON",
           "LOST"
@@ -7413,6 +7921,48 @@
             "type": "string"
           }
         }
+      },
+      "OutcomeVariantData": {
+        "type": "object",
+        "description": "Outcome-level variant data, discriminated by sport type.\n\nDifferent leagues carry different outcome metadata.",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/OutcomeVariantData_SportsTeamOutcomeData"
+          },
+          {
+            "$ref": "#/components/schemas/OutcomeVariantData_SportsTeamOutcomeData"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "SPORTS_NBA": "#/components/schemas/OutcomeVariantData_SportsTeamOutcomeData",
+            "SPORTS_FIFA_WORLD_CUP": "#/components/schemas/OutcomeVariantData_SportsTeamOutcomeData"
+          }
+        }
+      },
+      "OutcomeVariantData_SportsTeamOutcomeData": {
+        "description": "Outcome-level variant data, discriminated by sport type.\n\nDifferent leagues carry different outcome metadata.",
+        "allOf": [
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "SPORTS_FIFA_WORLD_CUP"
+                ],
+                "example": "SPORTS_FIFA_WORLD_CUP"
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/SportsTeamOutcomeData"
+          }
+        ]
       },
       "PendingYieldData": {
         "type": "object",
@@ -7476,7 +8026,13 @@
         "properties": {
           "total": {
             "type": "number",
-            "format": "double"
+            "format": "double",
+            "description": "The user's all-time leaderboard points."
+          },
+          "rank": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The user's current global rank, or null if they have no\npoints yet."
           }
         }
       },
@@ -7580,6 +8136,7 @@
       },
       "PriceFeedProvider": {
         "type": "string",
+        "description": "Provider of the price feed backing a crypto market.",
         "enum": [
           "PYTH",
           "BINANCE",
@@ -7607,7 +8164,7 @@
       },
       "QuoteType": {
         "type": "string",
-        "description": "Quote type (Ask or Bid). DB stores as bool: true = Ask, false = Bid.",
+        "description": "Quote type: ask or bid.",
         "enum": [
           "Ask",
           "Bid"
@@ -7636,6 +8193,38 @@
           "LOCKED",
           "UNLOCKED"
         ]
+      },
+      "RemoveOrdersByHashData": {
+        "type": "object",
+        "title": "RemoveOrdersByHashData",
+        "description": "Remove orders by hash request data",
+        "required": [
+          "hashes"
+        ],
+        "properties": {
+          "hashes": {
+            "type": "array",
+            "description": "An array of order hashes (0x-prefixed 32-byte hex strings, max 100)",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "minItems": 1
+          }
+        }
+      },
+      "RemoveOrdersByHashRequest": {
+        "type": "object",
+        "title": "RemoveOrdersByHashRequest",
+        "description": "Remove orders by hash request",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RemoveOrdersByHashData"
+          }
+        }
       },
       "RemoveOrdersData": {
         "type": "object",
@@ -7841,6 +8430,127 @@
           }
         }
       },
+      "SportsDataProvider": {
+        "type": "string",
+        "description": "Sports data provider.",
+        "enum": [
+          "PREDICT_SPORTS"
+        ]
+      },
+      "SportsEventTeam": {
+        "type": "object",
+        "title": "SportsEventTeam",
+        "description": "A sportsdata provider team as exposed in category variant data.",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Team identifier."
+          },
+          "name": {
+            "type": "string"
+          },
+          "abbreviation": {
+            "type": "string",
+            "description": "Team key abbreviation (e.g., \"MIN\", \"SA\"). Null when not available."
+          },
+          "providerTeamId": {
+            "type": "string",
+            "description": "The team identifier used by the sportsdata provider. Null when no game is linked."
+          }
+        }
+      },
+      "SportsFifaWorldCupVariantData": {
+        "type": "object",
+        "title": "SportsFifaWorldCupVariantData",
+        "description": "Variant data for SPORTS_FIFA_WORLD_CUP categories (SportsDataIO).",
+        "required": [
+          "provider",
+          "teams"
+        ],
+        "properties": {
+          "provider": {
+            "$ref": "#/components/schemas/SportsDataProvider"
+          },
+          "providerEventId": {
+            "type": "string",
+            "description": "Null when the category has no linked game yet."
+          },
+          "teams": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SportsEventTeam"
+            }
+          }
+        }
+      },
+      "SportsNbaVariantData": {
+        "type": "object",
+        "title": "SportsNbaVariantData",
+        "description": "Variant data for SPORTS_NBA categories (SportsDataIO).",
+        "required": [
+          "provider",
+          "teams"
+        ],
+        "properties": {
+          "provider": {
+            "$ref": "#/components/schemas/SportsDataProvider"
+          },
+          "providerEventId": {
+            "type": "string",
+            "description": "Null when the category has no linked game yet."
+          },
+          "teams": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SportsEventTeam"
+            }
+          }
+        }
+      },
+      "SportsPropsMarketData": {
+        "type": "object",
+        "title": "SportsPropsMarketData",
+        "description": "Per-market data for `SPORTS_PROPS` prop markets.\n\nFields are market-type-specific: `spreadSide` is set for spread markets,\n`line` is set for totals markets. Both-teams-to-score markets emit no\n`variantData` of this shape.",
+        "properties": {
+          "spreadSide": {
+            "description": "Which side of the parent match this spread market is on. Present for spread markets only.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TeamSide"
+              },
+              {
+                "description": "Which side of the parent match this spread market is on. Present for spread markets only."
+              }
+            ]
+          },
+          "line": {
+            "type": "number",
+            "format": "double",
+            "description": "The line value for this totals market. Present for totals markets only."
+          }
+        }
+      },
+      "SportsTeamOutcomeData": {
+        "type": "object",
+        "title": "SportsTeamOutcomeData",
+        "description": "Outcome variant data for sports markets where the outcome maps to a team.",
+        "required": [
+          "provider",
+          "team"
+        ],
+        "properties": {
+          "provider": {
+            "$ref": "#/components/schemas/SportsDataProvider"
+          },
+          "team": {
+            "$ref": "#/components/schemas/SportsEventTeam"
+          }
+        }
+      },
       "Tag": {
         "type": "object",
         "title": "Tag",
@@ -7911,6 +8621,14 @@
             "type": "string"
           }
         }
+      },
+      "TeamSide": {
+        "type": "string",
+        "description": "Which side of a sports match a team plays on.",
+        "enum": [
+          "HOME",
+          "AWAY"
+        ]
       },
       "TimeseriesBatchData": {
         "type": "object",
@@ -8107,13 +8825,25 @@
           },
           {
             "$ref": "#/components/schemas/VariantData_TweetCountVariantData"
+          },
+          {
+            "$ref": "#/components/schemas/VariantData_SportsNbaVariantData"
+          },
+          {
+            "$ref": "#/components/schemas/VariantData_SportsFifaWorldCupVariantData"
+          },
+          {
+            "$ref": "#/components/schemas/VariantData_SportsPropsMarketData"
           }
         ],
         "discriminator": {
           "propertyName": "type",
           "mapping": {
             "CRYPTO_UP_DOWN": "#/components/schemas/VariantData_CryptoUpDownVariantData",
-            "TWEET_COUNT": "#/components/schemas/VariantData_TweetCountVariantData"
+            "TWEET_COUNT": "#/components/schemas/VariantData_TweetCountVariantData",
+            "SPORTS_NBA": "#/components/schemas/VariantData_SportsNbaVariantData",
+            "SPORTS_FIFA_WORLD_CUP": "#/components/schemas/VariantData_SportsFifaWorldCupVariantData",
+            "SPORTS_PROPS": "#/components/schemas/VariantData_SportsPropsMarketData"
           }
         }
       },
@@ -8140,6 +8870,75 @@
           }
         ]
       },
+      "VariantData_SportsFifaWorldCupVariantData": {
+        "description": "Variant-specific metadata, discriminated by the `type` field.\n\nKnown variant types are deserialized into typed structs. Unknown variant\ntypes are handled gracefully by the [`deserialize_variant_data`] helper\non parent structs so that new upstream types don't break deserialization.",
+        "allOf": [
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "SPORTS_FIFA_WORLD_CUP"
+                ],
+                "example": "SPORTS_FIFA_WORLD_CUP"
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/SportsFifaWorldCupVariantData"
+          }
+        ]
+      },
+      "VariantData_SportsNbaVariantData": {
+        "description": "Variant-specific metadata, discriminated by the `type` field.\n\nKnown variant types are deserialized into typed structs. Unknown variant\ntypes are handled gracefully by the [`deserialize_variant_data`] helper\non parent structs so that new upstream types don't break deserialization.",
+        "allOf": [
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "SPORTS_NBA"
+                ],
+                "example": "SPORTS_NBA"
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/SportsNbaVariantData"
+          }
+        ]
+      },
+      "VariantData_SportsPropsMarketData": {
+        "description": "Variant-specific metadata, discriminated by the `type` field.\n\nKnown variant types are deserialized into typed structs. Unknown variant\ntypes are handled gracefully by the [`deserialize_variant_data`] helper\non parent structs so that new upstream types don't break deserialization.",
+        "allOf": [
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "SPORTS_PROPS"
+                ],
+                "example": "SPORTS_PROPS"
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/SportsPropsMarketData"
+          }
+        ]
+      },
       "VariantData_TweetCountVariantData": {
         "description": "Variant-specific metadata, discriminated by the `type` field.\n\nKnown variant types are deserialized into typed structs. Unknown variant\ntypes are handled gracefully by the [`deserialize_variant_data`] helper\non parent structs so that new upstream types don't break deserialization.",
         "allOf": [
@@ -8162,6 +8961,74 @@
             "$ref": "#/components/schemas/TweetCountVariantData"
           }
         ]
+      },
+      "WeeklyPointsEntry": {
+        "type": "object",
+        "title": "WeeklyPointsEntry",
+        "description": "A single week of points data",
+        "required": [
+          "week",
+          "startTime",
+          "endTime",
+          "userPoints",
+          "userReferralPoints",
+          "allocationAmount",
+          "calculated"
+        ],
+        "properties": {
+          "week": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Sequential week index, starting at 1 for the first round."
+          },
+          "startTime": {
+            "type": "string",
+            "description": "Round start time, RFC3339."
+          },
+          "endTime": {
+            "type": "string",
+            "description": "Round end time, RFC3339."
+          },
+          "userPoints": {
+            "type": "number",
+            "format": "double",
+            "description": "Points earned by the authenticated user that week, restricted to\nthe leaderboard-eligible sources.\n\n`0` until the weekly calculation is finalised, check `calculated`\nto disambiguate from a real zero."
+          },
+          "userReferralPoints": {
+            "type": "number",
+            "format": "double",
+            "description": "Subset of points attributable to referral sources."
+          },
+          "allocationAmount": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The budgeted point allocation for the round."
+          },
+          "calculated": {
+            "type": "boolean",
+            "description": "Whether the weekly calculation has been finalised.\n\nWhen `false`, the point fields will be `0`, as the round is still\nin-progress / \"TBD\". Distribution happens on a near-weekly cadence."
+          }
+        }
+      },
+      "WeeklyPointsResponse": {
+        "type": "object",
+        "title": "WeeklyPointsResponse",
+        "description": "Response for GET /v1/account/points/weekly",
+        "required": [
+          "success",
+          "data"
+        ],
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WeeklyPointsEntry"
+            }
+          }
+        }
       }
     },
     "securitySchemes": {
