@@ -120,7 +120,10 @@ fn patch_spec(spec: &mut Value) {
     // with conflicting trait impls. The redundant description is preserved
     // alongside the `$ref`; OpenAPI 3.0 tolerates the sibling for documentation
     // purposes and progenitor ignores it.
-    if let Some(ovd_prop) = spec.pointer_mut("/components/schemas/Outcome/properties/variantData").and_then(|v| v.as_object_mut()) {
+    if let Some(ovd_prop) = spec
+        .pointer_mut("/components/schemas/Outcome/properties/variantData")
+        .and_then(|v| v.as_object_mut())
+    {
         let description = ovd_prop.get("description").cloned();
         ovd_prop.clear();
         ovd_prop.insert("$ref".into(), Value::String("#/components/schemas/OutcomeVariantData".into()));
